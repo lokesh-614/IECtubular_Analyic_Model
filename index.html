@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cross-Flow IEC Numerical Simulator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- KaTeX for Publication-Grade Mathematical Equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar for sleek engineering panels */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      display: block;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18l-4 4m4-4l4 4M3 12h18M3 12l4-4m-4 4l4 4m14-4l-4-4m4 4l-4 4" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">Cross-Flow IEC Numerical Simulator</h1>
+          <p class="text-xs text-slate-400">2D Finite-Difference Sensible &amp; Latent Heat-Mass Transfer Solver</p>
+        </div>
+      </div>
+
+      <!-- Climatic Scenario Presets & Equations Button -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="hidden md:flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700 text-xs">
+          <span class="px-2 text-slate-400 font-medium">Climate:</span>
+          <button onclick="applyClimatePreset('hot_dry')" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-cyan-300 font-medium transition">Hot &amp; Dry (42°C)</button>
+          <button onclick="applyClimatePreset('composite')" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-amber-300 font-medium transition">Composite (38°C)</button>
+          <button onclick="applyClimatePreset('warm_humid')" class="px-2.5 py-1 rounded-md hover:bg-slate-700 text-rose-300 font-medium transition">Warm &amp; Humid (33°C)</button>
+        </div>
+
+        <button onclick="toggleEquationsModal(true)" class="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-lg shadow transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span>Equations &amp; Methodology</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <div class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- LEFT SIDEBAR: INPUT CONTROLS WIDGET (4 cols on lg) -->
+    <aside class="lg:col-span-4 xl:col-span-3 space-y-4">
+
+      <!-- Mobile Climate Presets -->
+      <div class="md:hidden bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-2">Climatic Presets</label>
+        <div class="grid grid-cols-3 gap-1.5 text-xs">
+          <button onclick="applyClimatePreset('hot_dry')" class="py-1.5 px-2 rounded-lg bg-cyan-50 text-cyan-800 font-semibold border border-cyan-200">Hot &amp; Dry</button>
+          <button onclick="applyClimatePreset('composite')" class="py-1.5 px-2 rounded-lg bg-amber-50 text-amber-800 font-semibold border border-amber-200">Composite</button>
+          <button onclick="applyClimatePreset('warm_humid')" class="py-1.5 px-2 rounded-lg bg-rose-50 text-rose-800 font-semibold border border-rose-200">Humid</button>
+        </div>
+      </div>
+
+      <!-- CARD 1: PRIMARY AIR INLET -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span> 1. Primary Air Inlet (Tube Side)
+          </h2>
+          <span class="text-[11px] font-mono-num text-slate-400">Product Air</span>
+        </div>
+        <div class="p-4 space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="Tp_in" class="block font-medium text-slate-700 mb-1">Dry-Bulb $T_{p,\text{in}}$ (°C)</label>
+              <input id="Tp_in" type="number" min="5" max="65" step="0.1" value="42.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="RHp_in" class="block font-medium text-slate-700 mb-1">Rel. Humidity $RH_{p,\text{in}}$ (%)</label>
+              <input id="RHp_in" type="number" min="1" max="100" step="0.5" value="22.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="Vp_cmh" class="font-medium text-slate-700">Primary Airflow $\dot{V}_p$ (CMH)</label>
+              <span id="val_Vp_m3s" class="font-mono-num text-[11px] text-slate-500">0.500 m³/s</span>
+            </div>
+            <input id="Vp_cmh" type="number" min="50" max="50000" step="10" value="1800" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: SECONDARY AIR INLET -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-500"></span> 2. Secondary Air (Cross-Flow)
+          </h2>
+          <span class="text-[11px] font-mono-num text-slate-400">Working Air</span>
+        </div>
+        <div class="p-4 space-y-3 text-xs">
+          <!-- Regenerative Toggle -->
+          <div class="flex items-center justify-between bg-cyan-50/70 border border-cyan-200/80 rounded-lg px-3 py-2">
+            <div>
+              <span class="text-xs font-semibold text-cyan-950 block">Regenerative Mode</span>
+              <span class="text-[11px] text-cyan-700">Bleed pre-cooled air from IEC outlet</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="regen_mode" type="checkbox" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
+            </label>
+          </div>
+
+          <div id="sec_air_inputs" class="grid grid-cols-2 gap-2.5 transition-opacity">
+            <div>
+              <label for="Ts_in" class="block font-medium text-slate-700 mb-1">Sec. Temp $T_{s,\text{in}}$ (°C)</label>
+              <input id="Ts_in" type="number" min="5" max="65" step="0.1" value="42.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="RHs_in" class="block font-medium text-slate-700 mb-1">Sec. RH $RH_{s,\text{in}}$ (%)</label>
+              <input id="RHs_in" type="number" min="1" max="100" step="0.5" value="22.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="Vs_cmh" class="font-medium text-slate-700">Sec. Flow $\dot{V}_s$ (CMH)</label>
+              </div>
+              <input id="Vs_cmh" type="number" min="50" max="50000" step="10" value="2160" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <span id="val_Vs_m3s" class="block font-mono-num text-[10px] text-slate-400 mt-0.5">0.600 m³/s</span>
+            </div>
+
+            <div>
+              <label for="Le_num" class="block font-medium text-slate-700 mb-1">Lewis Number ($Le$)</label>
+              <input id="Le_num" type="number" min="0.20" max="2.50" step="0.005" value="0.865" class="w-full font-mono-num font-semibold text-indigo-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <span class="block text-[10px] text-slate-400 mt-0.5">Air–Water (~0.865)</span>
+            </div>
+          </div>
+
+          <!-- Secondary Air Flow Direction Toggle -->
+          <div class="pt-1.5 border-t border-slate-100 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-slate-700">Secondary Air Direction</span>
+              <span id="sec_dir_badge" class="text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Co-Flow (↓)</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-[11px]">
+              <button id="btn_sec_top_down" type="button" onclick="setSecAirDirection('top_down')" class="py-1.5 px-2 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Top → Bottom ↓</button>
+              <button id="btn_sec_bottom_up" type="button" onclick="setSecAirDirection('bottom_up')" class="py-1.5 px-2 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Bottom → Top ↑</button>
+            </div>
+          </div>
+
+          <!-- Film Heat Transfer Toggle (Nusselt LPM vs Constant h_film) -->
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-slate-700">Film Heat Transfer ($h_{\text{film}}$)</span>
+              <span id="film_mode_badge" class="text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Nusselt (LPM)</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-[11px]">
+              <button id="btn_film_nusselt" type="button" onclick="setFilmMode('nusselt')" class="py-1.5 px-2 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Nusselt (LPM)</button>
+              <button id="btn_film_const" type="button" onclick="setFilmMode('constant')" class="py-1.5 px-2 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Constant h_film</button>
+            </div>
+
+            <div id="nusselt_film_controls" class="space-y-1.5">
+              <div class="flex justify-between items-center gap-2">
+                <label for="Vw_lpm" class="font-medium text-slate-700">Spray Water Flow $\dot{V}_w$ (LPM)</label>
+                <input id="Vw_lpm" type="number" min="0.2" max="500" step="0.5" value="6.0" class="w-24 font-mono-num font-semibold text-sky-700 px-2.5 py-1 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              </div>
+              <div class="grid grid-cols-3 gap-1 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200/80 font-mono-num text-[10px] text-slate-600 text-center">
+                <div><span class="text-slate-400 block">Film δ_w</span><span id="val_film_delta" class="font-bold text-sky-700">0.14 mm</span></div>
+                <div><span class="text-slate-400 block">h_film</span><span id="val_film_h" class="font-bold text-slate-800">4,280 W/m²K</span></div>
+                <div><span class="text-slate-400 block">Re_film</span><span id="val_film_re" class="font-bold text-slate-700">39.8</span></div>
+              </div>
+            </div>
+
+            <div id="const_film_controls" class="hidden bg-slate-50 border border-slate-200/90 rounded-lg p-2.5 space-y-1">
+              <div class="flex justify-between items-center gap-2">
+                <label for="h_film_const" class="font-medium text-slate-700">Fixed $h_{\text{film}}$ (W/m²·K)</label>
+                <input id="h_film_const" type="number" min="100" max="20000" step="100" value="3000" class="w-28 font-mono-num font-semibold text-slate-800 px-2.5 py-1 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-cyan-600">
+              </div>
+              <span class="block text-[10px] text-slate-500">Prescribed constant liquid film coefficient (typical: 1,500–4,500 W/m²·K)</span>
+            </div>
+          </div>
+
+          <!-- Water Film Model Assumption Toggle -->
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-700">Water Film Model</span>
+              <span id="tw_mode_badge" class="text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Adiabatic T_w(x,y)</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-lg text-[11px]">
+              <button id="btn_tw_solved" type="button" onclick="setTwMode('solved')" class="py-1.5 px-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Adiabatic</button>
+              <button id="btn_tw_supplied" type="button" onclick="setTwMode('supplied')" class="py-1.5 px-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Supplied T_w,in</button>
+              <button id="btn_tw_const" type="button" onclick="setTwMode('constant')" class="py-1.5 px-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Constant T_w</button>
+            </div>
+            <div id="const_tw_controls" class="hidden bg-sky-50/80 border border-sky-200 rounded-lg p-2.5 space-y-1.5">
+              <div class="flex justify-between items-center gap-2">
+                <label id="tw_input_label" for="Tw_const" class="font-medium text-sky-950">Water Inlet Temp $T_{w,\text{in}}$ (°C)</label>
+                <input id="Tw_const" type="number" min="2" max="55" step="0.1" value="20.0" class="w-24 font-mono-num font-semibold text-sky-800 px-2 py-1 rounded border border-sky-300 bg-white focus:outline-none focus:border-sky-600">
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-sky-700">
+                <span id="tw_input_hint">3-way marching energy balance</span>
+                <button type="button" onclick="snapTwToWetBulb()" class="underline font-semibold hover:text-sky-950">Set to T_wb,s,in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: IEC TUBE BUNDLE GEOMETRY -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 3. IEC Tube Bundle Geometry
+          </h2>
+          <span id="total_tubes_badge" class="text-[11px] font-mono-num bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">80 Tubes</span>
+        </div>
+        <div class="p-4 space-y-3.5 text-xs">
+          <!-- Arrangement Toggle -->
+          <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg">
+            <button id="btn_staggered" type="button" onclick="setArrangement('staggered')" class="py-1.5 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Staggered</button>
+            <button id="btn_inline" type="button" onclick="setArrangement('inline')" class="py-1.5 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Inline</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="N_rows" class="block font-medium text-slate-700 mb-1">Rows ($N_{\text{rows}}$)</label>
+              <input id="N_rows" type="number" min="2" max="30" step="1" value="8" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="N_cols" class="block font-medium text-slate-700 mb-1">Tubes/Row ($N_{\text{cols}}$)</label>
+              <input id="N_cols" type="number" min="2" max="30" step="1" value="10" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="D_o" class="block font-medium text-slate-700 mb-1">Outer Dia $D_o$ (mm)</label>
+              <input id="D_o" type="number" min="3" max="50" step="0.5" value="12.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="D_i" class="block font-medium text-slate-700 mb-1">Inner Dia $D_i$ (mm)</label>
+              <input id="D_i" type="number" min="2" max="48" step="0.5" value="11.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="S_T" class="block font-medium text-slate-700 mb-1">Trans. Pitch $S_T$ (mm)</label>
+              <input id="S_T" type="number" min="5" max="100" step="0.5" value="24.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="S_L" class="block font-medium text-slate-700 mb-1">Long. Pitch $S_L$ (mm)</label>
+              <input id="S_L" type="number" min="5" max="100" step="0.5" value="20.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="L" class="block font-medium text-slate-700 mb-1">Tube Length $L$ (m)</label>
+              <input id="L" type="number" min="0.1" max="4.0" step="0.05" value="0.80" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+            <div>
+              <label for="k_wall" class="block font-medium text-slate-700 mb-1">Wall $k_w$ (W/m·K)</label>
+              <input id="k_wall" type="number" min="0.05" max="450" step="0.05" value="0.20" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            </div>
+          </div>
+
+          <!-- Material Quick-Select -->
+          <div class="pt-1">
+            <div class="flex justify-between items-center text-[11px] text-slate-500 mb-1">
+              <span>Material Preset:</span>
+              <span id="mat_label" class="font-mono-num font-semibold text-slate-700">Polymer (0.2)</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+              <button type="button" onclick="setMaterial(0.20, 'Polymer')" class="py-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Polymer</button>
+              <button type="button" onclick="setMaterial(205, 'Aluminum')" class="py-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Aluminum</button>
+              <button type="button" onclick="setMaterial(385, 'Copper')" class="py-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">Copper</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: LUMPED WHOLE-BUNDLE LMTD vs 2D FINITE-DIFFERENCE COMPARISON -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span> 4. Lumped LMTD vs. 2D Grid
+          </h2>
+          <span id="lumped_F_badge" class="text-[11px] font-mono-num bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded font-semibold">F = 0.94</span>
+        </div>
+        <div class="p-3.5 space-y-2.5 text-xs">
+          <p class="text-[11px] text-slate-500 leading-snug">
+            Global whole-bundle iterative LMTD/LMED with unmixed cross-flow correction factor $F$ vs. 2D cell-by-cell marching:
+          </p>
+          <div class="overflow-hidden rounded-lg border border-slate-200">
+            <table class="w-full text-left border-collapse font-mono-num text-[11px]">
+              <thead class="bg-slate-100 text-slate-600">
+                <tr>
+                  <th class="py-1.5 px-2 font-semibold">Metric</th>
+                  <th class="py-1.5 px-2 font-semibold text-cyan-800">2D Grid</th>
+                  <th class="py-1.5 px-2 font-semibold text-amber-800">Lumped</th>
+                  <th class="py-1.5 px-2 font-semibold text-slate-500">Δ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr>
+                  <td class="py-1.5 px-2 font-sans font-medium text-slate-700">T_p,out</td>
+                  <td id="cmp_2d_tp" class="py-1.5 px-2 font-semibold text-slate-900">28.4 °C</td>
+                  <td id="cmp_lm_tp" class="py-1.5 px-2 font-semibold text-amber-700">28.1 °C</td>
+                  <td id="cmp_df_tp" class="py-1.5 px-2 text-slate-500">-0.3 K</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 px-2 font-sans font-medium text-slate-700">T_s,out</td>
+                  <td id="cmp_2d_ts" class="py-1.5 px-2 font-semibold text-slate-900">27.2 °C</td>
+                  <td id="cmp_lm_ts" class="py-1.5 px-2 font-semibold text-amber-700">27.0 °C</td>
+                  <td id="cmp_df_ts" class="py-1.5 px-2 text-slate-500">-0.2 K</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 px-2 font-sans font-medium text-slate-700">Capacity</td>
+                  <td id="cmp_2d_q" class="py-1.5 px-2 font-semibold text-slate-900">7.85 kW</td>
+                  <td id="cmp_lm_q" class="py-1.5 px-2 font-semibold text-amber-700">8.02 kW</td>
+                  <td id="cmp_df_q" class="py-1.5 px-2 text-slate-500">+2.1%</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 px-2 font-sans font-medium text-slate-700">WB Eff ε</td>
+                  <td id="cmp_2d_eff" class="py-1.5 px-2 font-semibold text-slate-900">71.8 %</td>
+                  <td id="cmp_lm_eff" class="py-1.5 px-2 font-semibold text-amber-700">73.4 %</td>
+                  <td id="cmp_df_eff" class="py-1.5 px-2 text-slate-500">+1.6%</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 px-2 font-sans font-medium text-slate-700">Mean T_w</td>
+                  <td id="cmp_2d_tw" class="py-1.5 px-2 font-semibold text-slate-900">25.1 °C</td>
+                  <td id="cmp_lm_tw" class="py-1.5 px-2 font-semibold text-amber-700">25.0 °C</td>
+                  <td id="cmp_df_tw" class="py-1.5 px-2 text-slate-500">-0.1 K</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200/80 font-mono-num text-[10px] text-slate-600 text-center">
+            <div><span class="text-slate-400 block">F-Factor</span><span id="lumped_F_val" class="font-bold text-slate-800">0.942</span></div>
+            <div><span class="text-slate-400 block">ΔT_lm</span><span id="lumped_dtlm_val" class="font-bold text-slate-800">9.45 K</span></div>
+            <div><span class="text-slate-400 block">Δh_lm</span><span id="lumped_dhlm_val" class="font-bold text-slate-800">14.2 kJ/kg</span></div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- RIGHT MAIN DASHBOARD: KPIs, TUBE GRAPHICS, CONTOURS & PSYCHROMETRICS (8 cols on lg) -->
+    <main class="lg:col-span-8 xl:col-span-9 space-y-5">
+
+      <!-- STAGE-BY-STAGE STATE CARDS + PERFORMANCE KPIS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+        <!-- Card 1: Primary Air Inlet -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-rose-500"></div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold uppercase text-slate-400">Primary Air Inlet</span>
+            <span class="text-[11px] font-mono-num bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-semibold">State P₁</span>
+          </div>
+          <div id="kpi_in_tdb" class="font-mono-num text-2xl font-bold text-slate-900">42.0 °C</div>
+          <div class="mt-2 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[11px] font-mono-num text-slate-600">
+            <div><span class="text-slate-400 block">RH</span><span id="kpi_in_rh" class="font-semibold">22.0%</span></div>
+            <div><span class="text-slate-400 block">Twb</span><span id="kpi_in_twb" class="font-semibold">23.1°C</span></div>
+            <div><span class="text-slate-400 block">ω_p</span><span id="kpi_in_w" class="font-semibold">11.3 g/kg</span></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Primary Air Outlet (Sensible Cooling) -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-cyan-600"></div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold uppercase text-slate-400">Primary Air Outlet</span>
+            <span class="text-[11px] font-mono-num bg-cyan-50 text-cyan-700 px-1.5 py-0.5 rounded font-semibold">State P₂ (Sensible)</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi_out_tdb" class="font-mono-num text-2xl font-bold text-cyan-700">28.4 °C</span>
+            <span id="kpi_dt_drop" class="font-mono-num text-xs font-semibold text-emerald-600">(-13.6 K)</span>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[11px] font-mono-num text-slate-600">
+            <div><span class="text-slate-400 block">RH</span><span id="kpi_out_rh" class="font-semibold">47.5%</span></div>
+            <div><span class="text-slate-400 block">Twb</span><span id="kpi_out_twb" class="font-semibold">19.5°C</span></div>
+            <div><span class="text-slate-400 block">ω_p</span><span id="kpi_out_w" class="font-semibold">11.3 g/kg</span></div>
+          </div>
+        </div>
+
+        <!-- Card 3: Secondary Air Outlet (Exhaust) -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold uppercase text-slate-400">Secondary Exhaust</span>
+            <span class="text-[11px] font-mono-num bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">State S₂ (Humid)</span>
+          </div>
+          <div id="kpi_sec_tdb" class="font-mono-num text-2xl font-bold text-slate-900">27.2 °C</div>
+          <div class="mt-2 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[11px] font-mono-num text-slate-600">
+            <div><span class="text-slate-400 block">RH</span><span id="kpi_sec_rh" class="font-semibold">89.4%</span></div>
+            <div><span class="text-slate-400 block">Δω_s</span><span id="kpi_sec_dw" class="font-semibold">+9.1 g/kg</span></div>
+            <div><span class="text-slate-400 block">ω_s,out</span><span id="kpi_sec_w" class="font-semibold">20.4 g/kg</span></div>
+          </div>
+        </div>
+
+        <!-- Card 4: IEC Thermal Effectiveness & Capacity -->
+        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-sm flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-bold uppercase text-slate-400 block">Sensible Cooling Capacity</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="kpi_q_kw" class="font-mono-num text-2xl font-bold text-cyan-400">7.85 kW</span>
+              <span id="kpi_tr" class="font-mono-num text-xs text-slate-400">(2.23 TR)</span>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800 grid grid-cols-3 gap-1.5 text-[11px] font-mono-num">
+            <div>
+              <span class="text-slate-400 block">WB Eff ε_wb</span>
+              <span id="kpi_wb_eff" class="font-semibold text-emerald-400">71.8 %</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">DP Eff ε_dp</span>
+              <span id="kpi_dp_eff" class="font-semibold text-sky-400">52.3 %</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Water Film</span>
+              <span id="kpi_tw_mean" class="font-semibold text-amber-300">25.1 °C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 1 VISUALIZATIONS: TUBE BUNDLE STRUCTURE & PSYCHROMETRIC CHART -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+
+        <!-- GRAPHICAL TUBE STRUCTURE (6 cols) -->
+        <div class="xl:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800">Cross-Flow Tube Bundle Geometry &amp; Pitch Schematic</h3>
+              <p class="text-xs text-slate-500">Exact tube array (<span id="tube_count_sub" class="font-mono-num font-semibold text-slate-700">8 rows × 10 tubes</span>) with live $S_T$, $S_L$, and $D_o$ dimensions</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="geom_re_p_badge" class="font-mono-num text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">Re_p: 9,850</span>
+              <span id="geom_re_s_badge" class="font-mono-num text-[11px] bg-cyan-50 text-cyan-800 px-2 py-0.5 rounded border border-cyan-200">Re_s: 2,410</span>
+            </div>
+          </div>
+          <div id="tubeCanvasBox" class="canvas-container w-full h-[350px] min-h-[350px] bg-slate-50 rounded-lg border border-slate-200/80 p-1">
+            <canvas id="tubeCanvas"></canvas>
+          </div>
+          <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Hot Primary ($T_{p,\text{in}}$)</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span> Cooled ($T_{p,\text{out}}$)</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-300/60 border border-sky-400 inline-block"></span> Water Film</span>
+            </div>
+            <span id="geom_dims_text" class="font-mono-num font-medium text-slate-700">S_T: 24.0 mm | S_L: 20.0 mm | Staggered</span>
+          </div>
+        </div>
+
+        <!-- PSYCHROMETRIC PROCESS CHART (6 cols) -->
+        <div class="xl:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800">Psychrometric Process Trajectories</h3>
+              <p class="text-xs text-slate-500">Primary Sensible Cooling ($P_1 \to P_2$) &amp; Secondary Air Humidification ($S_1 \to S_2$)</p>
+            </div>
+            <div class="flex items-center gap-3 text-[11px]">
+              <span class="flex items-center gap-1 text-slate-600 font-medium"><span class="inline-block w-3 h-0.5 bg-amber-500"></span> Primary (Sensible)</span>
+              <span class="flex items-center gap-1 text-slate-600 font-medium"><span class="inline-block w-3 h-0.5 bg-indigo-500"></span> Secondary (Wetted)</span>
+            </div>
+          </div>
+          <div id="psychroCanvasBox" class="canvas-container w-full h-[350px] min-h-[350px] bg-white rounded-lg border border-slate-200/80">
+            <canvas id="psychroCanvas"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ROW 2 VISUALIZATIONS: 2D SPATIAL TEMPERATURE CONTOURS -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">2D Spatial Temperature &amp; Humidity Contours Across IEC Tube Bank</h3>
+            <p class="text-xs text-slate-500">Finite-difference grid distribution ($x$: Primary tube length $0 \to L$, $y$: Secondary cross-flow row $1 \to N_{\text{rows}}$). Hover over any cell to inspect local values.</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Contour Variable Selector -->
+            <div class="inline-flex rounded-lg bg-slate-100 p-1 text-xs border border-slate-200">
+              <button id="tab_contour_tp" onclick="setContourField('Tp')" class="px-3 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Primary Air $T_p(x,y)$</button>
+              <button id="tab_contour_tw" onclick="setContourField('Tw')" class="px-3 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Water Film $T_w(x,y)$</button>
+              <button id="tab_contour_ws" onclick="setContourField('ws')" class="px-3 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Sec. Humidity $\omega_s(x,y)$</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div id="contourCanvasBox" class="lg:col-span-10 canvas-container relative w-full h-[340px] min-h-[340px] bg-slate-50 rounded-lg border border-slate-200">
+            <canvas id="contourCanvas"></canvas>
+            <!-- Interactive Hover Tooltip -->
+            <div id="contourTooltip" class="pointer-events-none hidden absolute z-20 bg-slate-900/95 text-white text-xs rounded-lg px-3 py-2 shadow-lg border border-slate-700 font-mono-num"></div>
+          </div>
+
+          <!-- Colorbar Legend & Grid Stats -->
+          <div class="lg:col-span-2 flex lg:flex-col justify-between items-center lg:items-stretch gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 h-full">
+            <div class="text-xs font-bold text-slate-700 text-center">Scale Legend</div>
+            <div class="flex lg:flex-row items-center justify-center gap-2 flex-1">
+              <div id="colorbar_gradient" class="w-40 h-4 lg:w-5 lg:h-40 rounded border border-slate-300" style="background: linear-gradient(to top, #0284c7, #10b981, #f59e0b, #e11d48);"></div>
+              <div class="flex lg:flex-col justify-between text-[11px] font-mono-num text-slate-600 lg:h-40 w-full lg:w-auto">
+                <span id="cb_max">42.0°C</span>
+                <span id="cb_mid">33.5°C</span>
+                <span id="cb_min">25.0°C</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500 text-center border-t border-slate-200 pt-2">
+              Grid: <span id="grid_res_label" class="font-mono-num font-semibold text-slate-700">30 × 8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- SEPARATE MODAL WINDOW: EQUATIONS & NUMERICAL METHODOLOGY                -->
+  <!-- ======================================================================= -->
+  <div id="equationsModal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-bold">∑</div>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold">Mathematical Formulation &amp; Numerical Methodology</h2>
+            <p class="text-xs text-slate-400">Cross-Flow Indirect Evaporative Cooler (IEC) Governing Equations</p>
+          </div>
+        </div>
+        <button onclick="toggleEquationsModal(false)" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Content -->
+      <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-700 leading-relaxed">
+
+        <!-- Section 1 -->
+        <section class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-cyan-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">1</span>
+            Cross-Flow Indirect Evaporative Cooling Mechanism
+          </h3>
+          <p class="mb-2">
+            In a tubular cross-flow <strong>Indirect Evaporative Cooler (IEC)</strong>, heat and mass transfer occur across two unmixed air streams separated by the tube wall:
+          </p>
+          <ul class="list-disc pl-5 space-y-1 text-slate-600">
+            <li><strong>Primary Air (Product Stream, $x$-direction):</strong> Flows inside the tubes of inner diameter $D_i$ and length $L$. It undergoes <em>purely sensible cooling</em> at constant humidity ratio ($\omega_{p,\text{out}} = \omega_{p,\text{in}}$).</li>
+            <li><strong>Secondary Air (Working Stream, $y$-direction):</strong> Flows perpendicular across the exterior of the wetted tube bank ($N_{\text{rows}}$ rows, transverse pitch $S_T$, longitudinal pitch $S_L$). Sensible heat conducted from the primary air into the thin falling water film evaporates water into the secondary stream.</li>
+          </ul>
+        </section>
+
+        <!-- Section 2 -->
+        <section>
+          <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-cyan-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">2</span>
+            2D Finite-Difference Cross-Flow Governing Equations
+          </h3>
+          <p class="mb-3">
+            The tube bundle is discretized into a 2D mesh of $N_x \times N_y$ control volumes, where $i \in [1, N_x]$ marches along tube length $\Delta x = L / N_x$, and $j \in [1, N_y]$ marches across tube rows ($N_y = N_{\text{rows}}$).
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase text-rose-600 mb-1">Primary Air Energy Balance (Sensible)</div>
+              $$T_{p}(i+1,j) = T_{p}(i,j) - \varepsilon_p \left[ T_{p}(i,j) - T_w(i,j) \right]$$
+              $$\varepsilon_p = 1 - \exp\left(-\text{NTU}_p\right), \quad \text{NTU}_p = \frac{UA_p}{\dot{m}_{p,\text{cell}} c_{p,a}}$$
+            </div>
+
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase text-cyan-600 mb-1">Secondary Air Enthalpy &amp; Mass Balance</div>
+              $$h_s(i,j+1) = h_s(i,j) + \varepsilon_m \left[ h_{s,\text{sat}}(T_w) - h_s(i,j) \right]$$
+              $$\omega_s(i,j+1) = \omega_s(i,j) + \varepsilon_m \left[ \omega_{s,\text{sat}}(T_w) - \omega_s(i,j) \right]$$
+              $$\varepsilon_m = 1 - \exp\left(-\text{NTU}_m\right), \quad \text{NTU}_m = \frac{h_m A_o}{\dot{m}_{s,\text{cell}}}$$
+            </div>
+          </div>
+
+          <div class="bg-amber-50/70 p-3.5 rounded-lg border border-amber-200">
+            <div class="text-xs font-bold uppercase text-amber-800 mb-1">Water Film Temperature Treatment (Three Modes)</div>
+            <p class="text-xs text-amber-900 mb-1">
+              <strong>Option A — Adiabatic Recirculated Energy Balance:</strong> Spray water has negligible net enthalpy change across the bundle; $T_w(i,j)$ is solved iteratively at every cell so primary sensible cooling equals secondary enthalpy gain:
+            </p>
+            $$\dot{m}_{p,\text{cell}} c_{p,a} \varepsilon_p \left[ T_{p}(i,j) - T_w(i,j) \right] = \dot{m}_{s,\text{cell}} \varepsilon_m \left[ h_{s,\text{sat}}(T_w(i,j)) - h_s(i,j) \right]$$
+            <p class="text-xs text-amber-900 mt-2 mb-1">
+              <strong>Option B — Supplied Water 3-Way Energy Balance ($T_{w,\text{in}}$ prescribed):</strong> Spray water enters at top row $j=1$ with user-specified $T_{w,\text{in}}$ and mass flow $\dot{m}_w$ ($\text{LPM}$), marching downward ($j = 1 \to N_{\text{rows}}$) against co-flow or counter-flow (bottom-to-top) secondary air:
+            </p>
+            $$\dot{m}_{w,\text{cell}} c_{p,w} \left[ T_w(i, j+1) - T_w(i, j) \right] = \dot{Q}_p(i,j) - \dot{Q}_s(i,j)$$
+            <p class="text-xs text-amber-900 mt-2">
+              <strong>Option C — Constant Water Temperature ($T_w = T_{w,\text{const}}$):</strong> Treats the water film as isothermal across the entire tube bank (limiting case of very high $\dot{V}_w$).
+            </p>
+          </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section>
+          <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-cyan-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">3</span>
+            Convective Heat &amp; Mass Transfer Correlations
+          </h3>
+          <div class="space-y-3">
+            <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+              <div class="font-semibold text-slate-800 mb-1">Overall Sensible Conductance ($UA_p$) &amp; Nusselt Falling Film</div>
+              $$\frac{1}{UA_p} = \frac{1}{h_p A_i} + \frac{\ln(D_o / D_i)}{2\pi k_w \Delta x N_{\text{col}}} + \frac{1}{h_{\text{film}} A_o}$$
+              <p class="text-xs text-slate-600 mt-1.5 mb-1">
+                From the spray water flow rate $\dot{V}_w$ ($\text{LPM}$), the wetting mass flow rate per unit length on both sides of the top tube row ($\Gamma = \frac{\dot{m}_w}{2 L N_{\text{cols}}}$) yields the Nusselt falling-film thickness $\delta_w$ and convective coefficient $h_{\text{film}}$:
+              </p>
+              $$\delta_w = \left( \frac{3 \mu_w \Gamma}{\rho_w^2 g} \right)^{1/3}, \quad Re_{\text{film}} = \frac{4\Gamma}{\mu_w}, \quad h_{\text{film}} = \max\!\left(\frac{k_w}{\delta_w},\; 0.822 \, k_w \left(\frac{\rho_w^2 g}{\mu_w^2}\right)^{1/3} Re_{\text{film}}^{-0.22}\right)$$
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                <div class="font-semibold text-slate-800 mb-1">Internal Tube Flow (Gnielinski / Laminar)</div>
+                $$Nu_p = \begin{cases} 3.66 & Re_p < 2300 \\ \dfrac{(f/8)(Re_p - 1000)Pr}{1 + 12.7\sqrt{f/8}(Pr^{2/3} - 1)} & Re_p \ge 2300 \end{cases}$$
+                $$f = (0.79 \ln Re_p - 1.64)^{-2}, \quad h_p = \frac{Nu_p k_{\text{air}}}{D_i}$$
+              </div>
+
+              <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                <div class="font-semibold text-slate-800 mb-1">Cross-Flow Tube Bank (Zukauskas + Lewis)</div>
+                $$Nu_s = C \cdot Re_{\max}^m \cdot Pr^{0.36}, \quad h_s = \frac{Nu_s k_{\text{air}}}{D_o}$$
+                $$h_m = \frac{h_s}{c_{p,m} \, Le^{2/3}} \quad (Le \approx 0.865)$$
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-indigo-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">4</span>
+            IEC Performance &amp; Effectiveness Metrics
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700">
+            <div class="bg-white p-3 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-900 mb-1">Sensible Cooling Capacity</div>
+              $$\dot{Q}_{\text{sen}} = \dot{m}_p c_{p,a} (T_{p,\text{in}} - T_{p,\text{out}})$$
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-900 mb-1">Wet-Bulb Effectiveness</div>
+              $$\varepsilon_{wb} = \frac{T_{p,\text{in}} - T_{p,\text{out}}}{T_{p,\text{in}} - T_{wb,s,\text{in}}}$$
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-900 mb-1">Dew-Point Effectiveness</div>
+              $$\varepsilon_{dp} = \frac{T_{p,\text{in}} - T_{p,\text{out}}}{T_{p,\text{in}} - T_{dp,s,\text{in}}}$$
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section class="bg-amber-50/60 p-4 rounded-xl border border-amber-200">
+          <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-amber-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">5</span>
+            Lumped Whole-Bundle LMTD / LMED Method (Cross-Flow Correction $F$)
+          </h3>
+          <p class="text-xs text-slate-700 mb-2">
+            Instead of discretizing into $N_x \times N_y$ control volumes, the lumped method treats the entire tube bank ($A_{o,\text{tot}} = N_{\text{tot}}\pi D_o L$) as a single global exchanger using a representative water film temperature $T_w$ and the cross-flow correction factor $F$:
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-white p-3 rounded-lg border border-amber-200/80">
+              <div class="font-bold text-slate-900 mb-1">Global LMTD &amp; LMED Driving Potentials</div>
+              $$\dot{Q}_{\text{sen}} = F \cdot UA_{\text{tot}} \cdot \Delta T_{\text{lm}}, \quad \Delta T_{\text{lm}} = \frac{(T_{p,\text{in}} - T_w) - (T_{p,\text{out}} - T_w)}{\ln\left(\dfrac{T_{p,\text{in}} - T_w}{T_{p,\text{out}} - T_w}\right)}$$
+              $$\dot{Q}_{\text{sec}} = F \cdot h_m A_{o,\text{tot}} \cdot \Delta h_{\text{lm}}, \quad \Delta h_{\text{lm}} = \frac{(h_{s,\text{sat}}(T_w) - h_{s,\text{in}}) - (h_{s,\text{sat}}(T_w) - h_{s,\text{out}})}{\ln\left(\dfrac{h_{s,\text{sat}}(T_w) - h_{s,\text{in}}}{h_{s,\text{sat}}(T_w) - h_{s,\text{out}}}\right)}$$
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-amber-200/80">
+              <div class="font-bold text-slate-900 mb-1">Cross-Flow Correction Factor ($F$)</div>
+              <p class="text-slate-600 mb-1">
+                When $T_w$ is uniform across the bundle, $F = 1.0$. When $T_w$ varies spatially due to coupled primary-secondary energy balance, $F &lt; 1$ accounts for cross-flow thermal non-uniformity via the unmixed-unmixed cross-flow effectiveness ratio ($P, R$):
+              </p>
+              $$F = \frac{\text{NTU}_{\text{counter-flow}}(P, R)}{\text{NTU}_{\text{cross-flow}}(P, R)} \le 1.0$$
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- JAVASCRIPT NUMERICAL ENGINE & VISUALIZATION CONTROLLERS                 -->
+  <!-- ======================================================================= -->
+  <script>
+    // -------------------------------------------------------------------------
+    // 1. ASHRAE PSYCHROMETRIC FUNCTIONS (SI Units, P = 101.325 kPa)
+    // -------------------------------------------------------------------------
+    const P_ATM = 101325.0;
+    const CP_DA = 1006.0;
+    const CP_V = 1860.0;
+    const H_FG0 = 2501000.0;
+
+    function satVaporPressure(Tc) {
+      return 610.78 * Math.exp((17.27 * Tc) / (Tc + 237.3));
+    }
+
+    function humidityRatioFromRH(Tc, rh) {
+      const pws = satVaporPressure(Tc);
+      const pw = Math.min(rh * pws, P_ATM * 0.95);
+      return (0.621945 * pw) / (P_ATM - pw);
+    }
+
+    function rhFromHumidityRatio(Tc, w) {
+      const pws = satVaporPressure(Tc);
+      const pw = (w * P_ATM) / (0.621945 + w);
+      return Math.max(0.0, Math.min(1.0, pw / pws));
+    }
+
+    function moistAirEnthalpy(Tc, w) {
+      return CP_DA * Tc + w * (H_FG0 + CP_V * Tc);
+    }
+
+    function moistAirDensity(Tc, w) {
+      const Tk = Tc + 273.15;
+      return P_ATM / (287.055 * Tk * (1.0 + 1.6078 * w));
+    }
+
+    function dewPointTemp(w) {
+      const pw = Math.max(10.0, (w * P_ATM) / (0.621945 + w));
+      const alpha = Math.log(pw / 610.78);
+      return (237.3 * alpha) / (17.27 - alpha);
+    }
+
+    function dryBulbFromEnthalpyAndW(h, w) {
+      return (h - w * H_FG0) / (CP_DA + w * CP_V);
+    }
+
+    // Robust Bisection Root Finder
+    function solveRoot(fn, a, b, tol = 1e-6, maxIter = 80) {
+      let fa = fn(a);
+      let fb = fn(b);
+      if (fa * fb > 0) {
+        a -= 15.0;
+        b += 15.0;
+        fa = fn(a);
+        fb = fn(b);
+      }
+      let low = a, high = b;
+      for (let i = 0; i < maxIter; i++) {
+        const mid = 0.5 * (low + high);
+        const fmid = fn(mid);
+        if (Math.abs(fmid) < tol || 0.5 * (high - low) < tol) return mid;
+        if (fa * fmid <= 0) {
+          high = mid;
+          fb = fmid;
+        } else {
+          low = mid;
+          fa = fmid;
+        }
+      }
+      return 0.5 * (low + high);
+    }
+
+    function wetBulbTemp(Tc, w) {
+      const hAir = moistAirEnthalpy(Tc, w);
+      return solveRoot((Twb) => {
+        const wSat = humidityRatioFromRH(Twb, 1.0);
+        const hSat = moistAirEnthalpy(Twb, wSat);
+        return (hAir + (wSat - w) * 4186.0 * Twb) - hSat;
+      }, -25.0, Tc + 0.5);
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. HEAT & MASS TRANSFER CORRELATIONS
+    // -------------------------------------------------------------------------
+    function internalConvectionCoeff(mDotTube, Di) {
+      const mu = 1.85e-5;
+      const kAir = 0.0263;
+      const Pr = 0.71;
+      const Across = Math.PI * Di * Di * 0.25;
+      const Re = (mDotTube * Di) / (Across * mu);
+      let Nu = 3.66;
+      if (Re >= 2300) {
+        const f = Math.pow(0.79 * Math.log(Re) - 1.64, -2);
+        Nu = ((f / 8.0) * (Re - 1000.0) * Pr) / (1.0 + 12.7 * Math.sqrt(f / 8.0) * (Math.pow(Pr, 2.0 / 3.0) - 1.0));
+      }
+      return { hp: (Nu * kAir) / Di, Re_p: Re };
+    }
+
+    function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865) {
+      const rho = moistAirDensity(Tmean, wmean);
+      const mu = 1.85e-5;
+      const kAir = 0.0263;
+      const Pr = 0.71;
+
+      let Vmax = VfaceS * (ST / Math.max(ST - Do, 0.0005));
+      if (arrangement === 'staggered') {
+        const SD = Math.sqrt(SL * SL + Math.pow(ST / 2.0, 2));
+        const ratio1 = ST / Math.max(ST - Do, 0.0005);
+        const ratio2 = ST / Math.max(2.0 * (SD - Do), 0.0005);
+        Vmax = VfaceS * Math.max(ratio1, ratio2);
+      }
+
+      const ReMax = (rho * Vmax * Do) / mu;
+      let C = 0.80, m = 0.40;
+      if (arrangement === 'staggered') {
+        if (ReMax >= 1000) {
+          C = 0.35 * Math.pow(ST / SL, 0.2);
+          m = 0.60;
+        } else {
+          C = 0.90;
+          m = 0.40;
+        }
+      } else {
+        if (ReMax >= 1000) {
+          C = 0.27;
+          m = 0.63;
+        }
+      }
+
+      const NuS = C * Math.pow(Math.max(ReMax, 10), m) * Math.pow(Pr, 0.36);
+      const hs = (NuS * kAir) / Do;
+      const cpMoist = CP_DA + wmean * CP_V;
+      const hm = hs / (cpMoist * Math.pow(Le, 2.0 / 3.0));
+
+      return { hs, hm, Re_s: ReMax };
+    }
+
+    function nusseltWaterFilmCoeffs(Vw_lpm, L, N_cols) {
+      const rho_w = 997.0;
+      const mu_w = 0.00089;
+      const k_w = 0.607;
+      const g = 9.81;
+
+      const Vw_m3s = Math.max(1e-6, (Vw_lpm / 1000.0) / 60.0);
+      const m_dot_w = rho_w * Vw_m3s;
+
+      const Gamma = m_dot_w / Math.max(0.05, 2.0 * L * N_cols);
+      const Re_film = (4.0 * Gamma) / mu_w;
+      const delta_w = Math.pow((3.0 * mu_w * Gamma) / (rho_w * rho_w * g), 1.0 / 3.0);
+
+      const h_cond = k_w / Math.max(delta_w, 1e-6);
+      const h_horiz = 0.822 * k_w * Math.pow((rho_w * rho_w * g) / (mu_w * mu_w), 1.0 / 3.0) * Math.pow(Math.max(Re_film, 1.0), -0.22);
+      const h_film = Math.max(h_cond * 0.75, h_horiz);
+
+      return { delta_w, h_film, Re_film, Gamma };
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. STATE & SOLVER EXECUTION (PURE IEC CROSS-FLOW)
+    // -------------------------------------------------------------------------
+    let appState = {
+      arrangement: 'staggered',
+      secAirDir: 'top_down',
+      filmMode: 'nusselt',
+      twMode: 'solved',
+      contourField: 'Tp',
+      lastResults: null,
+      lastParams: null
+    };
+
+    function readInputs() {
+      const getNum = (id, fallback) => {
+        const el = document.getElementById(id);
+        if (!el) return fallback;
+        const val = parseFloat(el.value);
+        return Number.isFinite(val) ? val : fallback;
+      };
+
+      const Tp_in = getNum('Tp_in', 42.0);
+      const RHp_in = Math.min(100, Math.max(0.1, getNum('RHp_in', 22.0))) / 100.0;
+      const Vp_cmh = Math.max(1, getNum('Vp_cmh', 1800));
+      const Vp_dot = Vp_cmh / 3600.0;
+
+      const regenEl = document.getElementById('regen_mode');
+      const regen = regenEl ? regenEl.checked : false;
+      const Ts_in = getNum('Ts_in', 42.0);
+      const RHs_in = Math.min(100, Math.max(0.1, getNum('RHs_in', 22.0))) / 100.0;
+      const Vs_cmh = Math.max(1, getNum('Vs_cmh', 2160));
+      const Vs_dot = Vs_cmh / 3600.0;
+
+      const Le = Math.max(0.1, getNum('Le_num', 0.865));
+      const Vw_lpm = Math.max(0.05, getNum('Vw_lpm', 6.0));
+      const h_film_const = Math.max(50, getNum('h_film_const', 3000));
+      const Tw_const = getNum('Tw_const', 20.0);
+      const Do = Math.max(3, getNum('D_o', 12)) / 1000.0;
+      let Di = Math.max(2, getNum('D_i', 11)) / 1000.0;
+      if (Di >= Do) Di = Do * 0.9;
+
+      const L = Math.max(0.1, getNum('L', 0.8));
+      const N_rows = Math.min(30, Math.max(2, Math.round(getNum('N_rows', 8))));
+      const N_cols = Math.min(30, Math.max(2, Math.round(getNum('N_cols', 10))));
+
+      let ST = Math.max(Do * 1000 + 1.5, getNum('S_T', 24)) / 1000.0;
+      let SL = Math.max(Do * 1000 + 1.5, getNum('S_L', 20)) / 1000.0;
+      const k_wall = Math.max(0.05, getNum('k_wall', 0.2));
+
+      const nusseltFilm = nusseltWaterFilmCoeffs(Vw_lpm, L, N_cols);
+      const film = appState.filmMode === 'constant'
+        ? { ...nusseltFilm, h_film: h_film_const }
+        : nusseltFilm;
+
+      return {
+        Tp_in, RHp_in, Vp_cmh, Vp_dot,
+        regen, Ts_in, RHs_in, Vs_cmh, Vs_dot, Le, Vw_lpm,
+        filmMode: appState.filmMode,
+        h_film_const,
+        film,
+        secAirDir: appState.secAirDir,
+        twMode: appState.twMode,
+        Tw_const,
+        Do, Di, L, N_rows, N_cols, ST, SL, k_wall,
+        arrangement: appState.arrangement,
+        Nx: 30
+      };
+    }
+
+    function solveCrossFlowIEC(params, Ts_in_eff, ws_in_eff) {
+      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, secAirDir, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement, Nx } = params;
+      const Ny = N_rows;
+      const N_total = N_rows * N_cols;
+      const isBottomUp = secAirDir === 'bottom_up';
+
+      const wp_in = humidityRatioFromRH(Tp_in, RHp_in);
+      const rhop_in = moistAirDensity(Tp_in, wp_in);
+      const mp_total = rhop_in * Vp_dot;
+      const mp_per_tube = mp_total / N_total;
+
+      const rhos_in = moistAirDensity(Ts_in_eff, ws_in_eff);
+      const ms_total = rhos_in * Vs_dot;
+      const hs_in = moistAirEnthalpy(Ts_in_eff, ws_in_eff);
+
+      const A_face_s = (N_cols * ST) * L;
+      const V_face_s = Vs_dot / A_face_s;
+
+      const { hp, Re_p } = internalConvectionCoeff(mp_per_tube, Di);
+      const { hs, hm, Re_s } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le);
+      const h_film = film.h_film;
+
+      const dx = L / Nx;
+      const Ai_cell = N_cols * (Math.PI * Di * dx);
+      const Ao_cell = N_cols * (Math.PI * Do * dx);
+
+      const R_in = 1.0 / (hp * Ai_cell);
+      const R_wall = Math.log(Do / Di) / (2.0 * Math.PI * k_wall * dx * N_cols);
+      const R_film = 1.0 / (h_film * Ao_cell);
+      const UA_p = 1.0 / (R_in + R_wall + R_film);
+
+      const mp_cell = mp_total / Ny;
+      const ms_cell = ms_total / Nx;
+      const cp_p = CP_DA + wp_in * CP_V;
+
+      const rho_w = 997.0;
+      const cp_w = 4186.0;
+      const mw_total = rho_w * Math.max(1e-6, (params.Vw_lpm / 1000.0) / 60.0);
+      const mw_cell = mw_total / Nx;
+
+      const NTU_p = UA_p / (mp_cell * cp_p);
+      const NTU_m = (hm * Ao_cell) / ms_cell;
+      const eff_p = 1.0 - Math.exp(-NTU_p);
+      const eff_m = 1.0 - Math.exp(-NTU_m);
+
+      // 2D Grids (j = 0 is TOP row where water is sprayed; j = Ny - 1 is BOTTOM row)
+      const Tp_grid = Array.from({ length: Nx + 1 }, () => new Float64Array(Ny).fill(Tp_in));
+      const hs_grid = Array.from({ length: Nx }, () => new Float64Array(Ny + 1).fill(hs_in));
+      const ws_grid = Array.from({ length: Nx }, () => new Float64Array(Ny + 1).fill(ws_in_eff));
+      const Tw_grid = Array.from({ length: Nx }, () => new Float64Array(Ny).fill(Tw_const));
+      const Tw_march = Array.from({ length: Nx }, () => new Float64Array(Ny + 1).fill(Tw_const));
+
+      // Counter-flow iterative column sweeps when secondary air flows upward (Bottom -> Top) against downward spray water
+      const colSweeps = (isBottomUp && twMode === 'supplied') ? 14 : 1;
+
+      for (let i = 0; i < Nx; i++) {
+        for (let j = 0; j < Ny; j++) {
+          Tw_grid[i][j] = Tw_const;
+        }
+
+        for (let sweep = 0; sweep < colSweeps; sweep++) {
+          let maxTwDiff = 0.0;
+
+          if (colSweeps === 1) {
+            if (!isBottomUp) {
+              // Top -> Bottom secondary air (Co-Flow with spray water)
+              hs_grid[i][0] = hs_in;
+              ws_grid[i][0] = ws_in_eff;
+              Tw_march[i][0] = Tw_const;
+              for (let j = 0; j < Ny; j++) {
+                const Tp_c = Tp_grid[i][j];
+                const hs_c = hs_grid[i][j];
+                const ws_c = ws_grid[i][j];
+
+                let Tw_local;
+                if (twMode === 'constant') {
+                  Tw_local = Tw_const;
+                } else if (twMode === 'supplied') {
+                  const Tw_in_cell = Tw_march[i][j];
+                  const Tw_out_cell = solveRoot((Tw_out_guess) => {
+                    const Tw_avg = 0.5 * (Tw_in_cell + Tw_out_guess);
+                    const wSat = humidityRatioFromRH(Tw_avg, 1.0);
+                    const hSat = moistAirEnthalpy(Tw_avg, wSat);
+                    const Qp = mp_cell * cp_p * eff_p * (Tp_c - Tw_avg);
+                    const Qs = ms_cell * eff_m * (hSat - hs_c);
+                    const Qw = mw_cell * cp_w * (Tw_out_guess - Tw_in_cell);
+                    return Qw - (Qp - Qs);
+                  }, -10.0, Math.max(Tp_c, Ts_in_eff, Tw_in_cell) + 15.0, 1e-4, 45);
+                  Tw_march[i][j + 1] = Tw_out_cell;
+                  Tw_local = 0.5 * (Tw_in_cell + Tw_out_cell);
+                } else {
+                  Tw_local = solveRoot((Tw) => {
+                    const wSat = humidityRatioFromRH(Tw, 1.0);
+                    const hSat = moistAirEnthalpy(Tw, wSat);
+                    const Qp = mp_cell * cp_p * eff_p * (Tp_c - Tw);
+                    const Qs = ms_cell * eff_m * (hSat - hs_c);
+                    return Qp - Qs;
+                  }, -10.0, Math.max(Tp_c, Ts_in_eff) + 10.0, 1e-4, 45);
+                }
+
+                Tw_grid[i][j] = Tw_local;
+                const wSatL = humidityRatioFromRH(Tw_local, 1.0);
+                const hSatL = moistAirEnthalpy(Tw_local, wSatL);
+
+                Tp_grid[i + 1][j] = Tp_c - eff_p * (Tp_c - Tw_local);
+                hs_grid[i][j + 1] = hs_c + eff_m * (hSatL - hs_c);
+                ws_grid[i][j + 1] = ws_c + eff_m * (wSatL - ws_c);
+              }
+            } else {
+              // Bottom -> Top secondary air (Counter-Flow) for Adiabatic or Constant Tw
+              let h_curr = hs_in;
+              let w_curr = ws_in_eff;
+              for (let j = Ny - 1; j >= 0; j--) {
+                const Tp_c = Tp_grid[i][j];
+                hs_grid[i][j] = h_curr;
+                ws_grid[i][j] = w_curr;
+
+                let Tw_local;
+                if (twMode === 'constant') {
+                  Tw_local = Tw_const;
+                } else {
+                  Tw_local = solveRoot((Tw) => {
+                    const wSat = humidityRatioFromRH(Tw, 1.0);
+                    const hSat = moistAirEnthalpy(Tw, wSat);
+                    const Qp = mp_cell * cp_p * eff_p * (Tp_c - Tw);
+                    const Qs = ms_cell * eff_m * (hSat - h_curr);
+                    return Qp - Qs;
+                  }, -10.0, Math.max(Tp_c, Ts_in_eff) + 10.0, 1e-4, 45);
+                }
+
+                Tw_grid[i][j] = Tw_local;
+                const wSatL = humidityRatioFromRH(Tw_local, 1.0);
+                const hSatL = moistAirEnthalpy(Tw_local, wSatL);
+
+                Tp_grid[i + 1][j] = Tp_c - eff_p * (Tp_c - Tw_local);
+                h_curr = h_curr + eff_m * (hSatL - h_curr);
+                w_curr = w_curr + eff_m * (wSatL - w_curr);
+              }
+              hs_grid[i][Ny] = h_curr;
+              ws_grid[i][Ny] = w_curr;
+            }
+          } else {
+            // Coupled Counter-Flow: Secondary Air marches Bottom -> Top (j = Ny-1 -> 0)
+            let h_curr = hs_in;
+            let w_curr = ws_in_eff;
+            for (let j = Ny - 1; j >= 0; j--) {
+              hs_grid[i][j] = h_curr;
+              ws_grid[i][j] = w_curr;
+              const Tw_local = Tw_grid[i][j];
+              const wSatL = humidityRatioFromRH(Tw_local, 1.0);
+              const hSatL = moistAirEnthalpy(Tw_local, wSatL);
+              h_curr = h_curr + eff_m * (hSatL - h_curr);
+              w_curr = w_curr + eff_m * (wSatL - w_curr);
+            }
+
+            // Spray Water marches Top -> Bottom (j = 0 -> Ny-1) via 3-way energy balance
+            Tw_march[i][0] = Tw_const;
+            for (let j = 0; j < Ny; j++) {
+              const Tp_c = Tp_grid[i][j];
+              const hs_c = hs_grid[i][j];
+              const Tw_in_cell = Tw_march[i][j];
+
+              const Tw_out_cell = solveRoot((Tw_out_guess) => {
+                const Tw_avg = 0.5 * (Tw_in_cell + Tw_out_guess);
+                const wSat = humidityRatioFromRH(Tw_avg, 1.0);
+                const hSat = moistAirEnthalpy(Tw_avg, wSat);
+                const Qp = mp_cell * cp_p * eff_p * (Tp_c - Tw_avg);
+                const Qs = ms_cell * eff_m * (hSat - hs_c);
+                const Qw = mw_cell * cp_w * (Tw_out_guess - Tw_in_cell);
+                return Qw - (Qp - Qs);
+              }, -10.0, Math.max(Tp_c, Ts_in_eff, Tw_in_cell) + 15.0, 1e-4, 45);
+
+              Tw_march[i][j + 1] = Tw_out_cell;
+              const Tw_new = 0.5 * (Tw_in_cell + Tw_out_cell);
+              maxTwDiff = Math.max(maxTwDiff, Math.abs(Tw_new - Tw_grid[i][j]));
+              Tw_grid[i][j] = 0.65 * Tw_new + 0.35 * Tw_grid[i][j];
+            }
+
+            if (maxTwDiff < 1e-3 || sweep === colSweeps - 1) {
+              let h_fin = hs_in;
+              let w_fin = ws_in_eff;
+              for (let j = Ny - 1; j >= 0; j--) {
+                hs_grid[i][j] = h_fin;
+                ws_grid[i][j] = w_fin;
+                const Tw_local = Tw_grid[i][j];
+                const wSatL = humidityRatioFromRH(Tw_local, 1.0);
+                const hSatL = moistAirEnthalpy(Tw_local, wSatL);
+                Tp_grid[i + 1][j] = Tp_grid[i][j] - eff_p * (Tp_grid[i][j] - Tw_local);
+                h_fin = h_fin + eff_m * (hSatL - h_fin);
+                w_fin = w_fin + eff_m * (wSatL - w_fin);
+              }
+              hs_grid[i][Ny] = h_fin;
+              ws_grid[i][Ny] = w_fin;
+              break;
+            }
+          }
+        }
+      }
+
+      // Mass-averaged Primary Air Outlet
+      let sumTpOut = 0;
+      for (let j = 0; j < Ny; j++) sumTpOut += Tp_grid[Nx][j];
+      const Tp_out = sumTpOut / Ny;
+
+      // Mass-averaged Secondary Air Exhaust at hs_grid[i][Ny]
+      let sumHsOut = 0, sumWsOut = 0;
+      for (let i = 0; i < Nx; i++) {
+        sumHsOut += hs_grid[i][Ny];
+        sumWsOut += ws_grid[i][Ny];
+      }
+      const hs_out = sumHsOut / Nx;
+      const ws_out = sumWsOut / Nx;
+      const Ts_out = dryBulbFromEnthalpyAndW(hs_out, ws_out);
+
+      return {
+        Tp_out, wp_in, mp_total, cp_p,
+        Ts_out, ws_out,
+        Tp_grid, Tw_grid, ws_grid,
+        Re_p, Re_s, Nx, Ny
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // LUMPED WHOLE-BUNDLE LMTD / LMED SOLVER WITH CROSS-FLOW CORRECTION F
+    // -------------------------------------------------------------------------
+    function computeCrossFlowCorrectionF(P, R) {
+      // Computes exact cross-flow correction factor F = NTU_cf / NTU_cross
+      // using Bowman-Mueller-Nagle / Incropera unmixed-unmixed cross-flow relation
+      if (P <= 1e-4 || R <= 1e-4) return 1.0;
+      const P_safe = Math.min(0.98, Math.max(1e-4, P));
+      const R_safe = Math.max(1e-4, R);
+
+      // Counter-flow NTU required to achieve thermal effectiveness P at capacity ratio R
+      let ntu_cf;
+      if (Math.abs(R_safe - 1.0) < 1e-3) {
+        ntu_cf = P_safe / (1.0 - P_safe);
+      } else {
+        const num = 1.0 - P_safe * R_safe;
+        const den = 1.0 - P_safe;
+        if (num <= 1e-5) return 0.75;
+        ntu_cf = Math.log(num / den) / (1.0 - R_safe);
+      }
+
+      // Unmixed-unmixed cross-flow effectiveness eps(NTU, R) = 1 - exp((NTU^0.22 / R)*(exp(-R*NTU^0.78) - 1))
+      const epsCross = (ntu) => {
+        if (ntu <= 1e-6) return 0.0;
+        const n022 = Math.pow(ntu, 0.22);
+        const n078 = Math.pow(ntu, 0.78);
+        return 1.0 - Math.exp((n022 / R_safe) * (Math.exp(-R_safe * n078) - 1.0));
+      };
+
+      if (epsCross(25.0) <= P_safe) return 0.72;
+      const ntu_cross = solveRoot((ntu) => epsCross(ntu) - P_safe, 1e-4, 25.0, 1e-5, 50);
+      const F = ntu_cf / Math.max(ntu_cross, 1e-5);
+      return Math.max(0.65, Math.min(1.0, F));
+    }
+
+    function solveLumpedWholeBundleLMTD(params, Ts_in_eff, ws_in_eff) {
+      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement } = params;
+      const N_total = N_rows * N_cols;
+
+      const wp_in = humidityRatioFromRH(Tp_in, RHp_in);
+      const rhop_in = moistAirDensity(Tp_in, wp_in);
+      const mp_total = rhop_in * Vp_dot;
+      const mp_per_tube = mp_total / N_total;
+
+      const rhos_in = moistAirDensity(Ts_in_eff, ws_in_eff);
+      const ms_total = rhos_in * Vs_dot;
+      const hs_in = moistAirEnthalpy(Ts_in_eff, ws_in_eff);
+
+      const A_face_s = (N_cols * ST) * L;
+      const V_face_s = Vs_dot / A_face_s;
+
+      const { hp } = internalConvectionCoeff(mp_per_tube, Di);
+      const { hs, hm } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le);
+      const h_film = film.h_film;
+
+      // Whole-bundle total surface areas & conductance UA_tot
+      const Ai_tot = N_total * Math.PI * Di * L;
+      const Ao_tot = N_total * Math.PI * Do * L;
+      const R_in = 1.0 / (hp * Ai_tot);
+      const R_wall = Math.log(Do / Di) / (2.0 * Math.PI * k_wall * L * N_total);
+      const R_film = 1.0 / (h_film * Ao_tot);
+      const UA_tot = 1.0 / (R_in + R_wall + R_film);
+      const cp_p = CP_DA + wp_in * CP_V;
+      const rho_w = 997.0;
+      const cp_w = 4186.0;
+      const mw_total = rho_w * Math.max(1e-6, (params.Vw_lpm / 1000.0) / 60.0);
+
+      // Helper: iterative LMTD/LMED balance for a candidate water film temp Tw and F-factor
+      const evalForTw = (Tw, F_factor) => {
+        const wSat = humidityRatioFromRH(Tw, 1.0);
+        const hSat = moistAirEnthalpy(Tw, wSat);
+
+        // Iterative primary outlet Tp_out using LMTD: Qp = F * UA_tot * dT_lm = mp * cp_p * (Tp_in - Tp_out)
+        let Tp_out = Tw + (Tp_in - Tw) * Math.exp(-(F_factor * UA_tot) / (mp_total * cp_p));
+        let dT_lm = Math.max(0.01, Tp_in - Tw);
+        for (let it = 0; it < 35; it++) {
+          const dT1 = Tp_in - Tw;
+          const dT2 = Tp_out - Tw;
+          if (Math.abs(dT1) < 1e-5) {
+            Tp_out = Tp_in;
+            dT_lm = 0.0;
+            break;
+          }
+          if (Math.abs(dT1 - dT2) < 1e-6) {
+            dT_lm = dT1;
+          } else {
+            const ratio = Math.max(1e-6, dT2 / dT1);
+            dT_lm = (dT2 - dT1) / Math.log(ratio);
+          }
+          const Qp_lmtd = F_factor * UA_tot * dT_lm;
+          const Tp_next = Tp_in - Qp_lmtd / (mp_total * cp_p);
+          if (Math.abs(Tp_next - Tp_out) < 1e-6) {
+            Tp_out = Tp_next;
+            break;
+          }
+          Tp_out = 0.5 * Tp_out + 0.5 * Tp_next;
+        }
+        const Qp = mp_total * cp_p * (Tp_in - Tp_out);
+
+        // Iterative secondary outlet hs_out using LMED: Qs = F * hm * Ao_tot * dh_lm = ms * (hs_out - hs_in)
+        let hs_out = hSat - (hSat - hs_in) * Math.exp(-(F_factor * hm * Ao_tot) / ms_total);
+        let dh_lm = Math.max(1.0, hSat - hs_in);
+        for (let it = 0; it < 35; it++) {
+          const dh1 = hSat - hs_in;
+          const dh2 = hSat - hs_out;
+          if (Math.abs(dh1) < 1e-3) {
+            hs_out = hs_in;
+            dh_lm = 0.0;
+            break;
+          }
+          if (Math.abs(dh1 - dh2) < 1e-4) {
+            dh_lm = dh1;
+          } else {
+            const ratio = Math.max(1e-6, dh2 / dh1);
+            dh_lm = (dh2 - dh1) / Math.log(ratio);
+          }
+          const Qs_lmed = F_factor * hm * Ao_tot * dh_lm;
+          const hs_next = hs_in + Qs_lmed / ms_total;
+          if (Math.abs(hs_next - hs_out) < 1e-4) {
+            hs_out = hs_next;
+            break;
+          }
+          hs_out = 0.5 * hs_out + 0.5 * hs_next;
+        }
+        const Qs = ms_total * (hs_out - hs_in);
+        const ws_out = ws_in_eff + (wSat - ws_in_eff) * ((hs_out - hs_in) / Math.max(1.0, hSat - hs_in));
+        const Ts_out = dryBulbFromEnthalpyAndW(hs_out, ws_out);
+
+        return { Tp_out, Ts_out, ws_out, Qp, Qs, dT_lm, dh_lm };
+      };
+
+      // Solve F-factor & Tw iteratively
+      let F_factor = twMode === 'constant' ? 1.0 : 0.94;
+      let Tw_lumped = (twMode === 'constant' || twMode === 'supplied') ? Tw_const : wetBulbTemp(Ts_in_eff, ws_in_eff);
+      let state = evalForTw(Tw_lumped, F_factor);
+
+      const outerLoops = twMode === 'constant' ? 1 : 6;
+      for (let outer = 0; outer < outerLoops; outer++) {
+        if (twMode === 'supplied') {
+          const Tw_out_lumped = solveRoot(
+            (Tw_out_guess) => {
+              const Tw_avg = 0.5 * (Tw_const + Tw_out_guess);
+              const res = evalForTw(Tw_avg, F_factor);
+              return mw_total * cp_w * (Tw_out_guess - Tw_const) - (res.Qp - res.Qs);
+            },
+            -10.0,
+            Math.max(Tp_in, Ts_in_eff, Tw_const) + 15.0,
+            1e-4,
+            45
+          );
+          Tw_lumped = 0.5 * (Tw_const + Tw_out_lumped);
+        } else if (twMode !== 'constant') {
+          Tw_lumped = solveRoot(
+            (Tw_guess) => {
+              const res = evalForTw(Tw_guess, F_factor);
+              return res.Qp - res.Qs;
+            },
+            -10.0,
+            Math.max(Tp_in, Ts_in_eff) + 10.0,
+            1e-4,
+            45
+          );
+        }
+        state = evalForTw(Tw_lumped, F_factor);
+
+        if (twMode === 'constant') {
+          F_factor = 1.0; // Isothermal boundary has F = 1
+        } else {
+          // Effective cross-flow thermal parameters P and R
+          const dT_max = Math.max(0.5, Tp_in - wetBulbTemp(Ts_in_eff, ws_in_eff));
+          const P = (Tp_in - state.Tp_out) / dT_max;
+          const R = (mp_total * cp_p) / Math.max(1.0, ms_total * (CP_DA + ws_in_eff * CP_V));
+          const F_new = computeCrossFlowCorrectionF(P, R);
+          if (Math.abs(F_new - F_factor) < 1e-4) {
+            F_factor = F_new;
+            break;
+          }
+          F_factor = 0.5 * F_factor + 0.5 * F_new;
+        }
+      }
+
+      state = evalForTw(Tw_lumped, F_factor);
+      const Twb_s_in = wetBulbTemp(Ts_in_eff, ws_in_eff);
+      const Q_kw = state.Qp / 1000.0;
+      const wb_eff = ((Tp_in - state.Tp_out) / Math.max(Tp_in - Twb_s_in, 0.1)) * 100.0;
+
+      return {
+        Tp_out: state.Tp_out,
+        Ts_out: state.Ts_out,
+        ws_out: state.ws_out,
+        Q_kw,
+        wb_eff,
+        Tw_mean: Tw_lumped,
+        F_factor,
+        dT_lm: state.dT_lm,
+        dh_lm: state.dh_lm
+      };
+    }
+
+    function runSimulation() {
+      const params = readInputs();
+      updateUIReadouts(params);
+
+      const wp_in = humidityRatioFromRH(params.Tp_in, params.RHp_in);
+      let Ts_eff = params.Ts_in;
+      let ws_eff = humidityRatioFromRH(params.Ts_in, params.RHs_in);
+
+      let iecRes;
+      if (params.regen) {
+        Ts_eff = params.Tp_in - 5.0;
+        ws_eff = wp_in;
+        for (let iter = 0; iter < 5; iter++) {
+          iecRes = solveCrossFlowIEC(params, Ts_eff, ws_eff);
+          if (Math.abs(iecRes.Tp_out - Ts_eff) < 0.05) break;
+          Ts_eff = 0.6 * iecRes.Tp_out + 0.4 * Ts_eff;
+        }
+        document.getElementById('Ts_in').value = iecRes.Tp_out.toFixed(1);
+        document.getElementById('RHs_in').value = (rhFromHumidityRatio(iecRes.Tp_out, wp_in) * 100).toFixed(1);
+      } else {
+        iecRes = solveCrossFlowIEC(params, Ts_eff, ws_eff);
+      }
+
+      // Also solve Lumped Whole-Bundle LMTD/LMED at the exact same inlet state
+      const lumpedRes = solveLumpedWholeBundleLMTD(params, Ts_eff, ws_eff);
+
+      const Tp_out = iecRes.Tp_out;
+      const RHp_out = rhFromHumidityRatio(Tp_out, wp_in);
+      const Twb_p_out = wetBulbTemp(Tp_out, wp_in);
+      const Twb_p_in = wetBulbTemp(params.Tp_in, wp_in);
+
+      // Secondary inlet & outlet properties
+      const RHs_in_eff = rhFromHumidityRatio(Ts_eff, ws_eff);
+      const Twb_s_in = wetBulbTemp(Ts_eff, ws_eff);
+      const Tdp_s_in = dewPointTemp(ws_eff);
+      const RHs_out = rhFromHumidityRatio(iecRes.Ts_out, iecRes.ws_out);
+
+      // Sensible Cooling Capacity & IEC Effectiveness
+      const Q_kw = (iecRes.mp_total * iecRes.cp_p * (params.Tp_in - Tp_out)) / 1000.0;
+      const wb_eff = ((params.Tp_in - Tp_out) / Math.max(params.Tp_in - Twb_s_in, 0.1)) * 100.0;
+      const dp_eff = ((params.Tp_in - Tp_out) / Math.max(params.Tp_in - Tdp_s_in, 0.1)) * 100.0;
+
+      let sumTw = 0, countTw = 0;
+      for (let i = 0; i < iecRes.Nx; i++) {
+        for (let j = 0; j < iecRes.Ny; j++) {
+          sumTw += iecRes.Tw_grid[i][j];
+          countTw++;
+        }
+      }
+      const meanTw = sumTw / countTw;
+
+      const results = {
+        p_in: { Tdb: params.Tp_in, RH: params.RHp_in * 100, Twb: Twb_p_in, w: wp_in * 1000 },
+        p_out: { Tdb: Tp_out, RH: RHp_out * 100, Twb: Twb_p_out, w: wp_in * 1000 },
+        s_in: { Tdb: Ts_eff, RH: RHs_in_eff * 100, Twb: Twb_s_in, w: ws_eff * 1000 },
+        s_out: { Tdb: iecRes.Ts_out, RH: RHs_out * 100, w: iecRes.ws_out * 1000 },
+        Q_kw, wb_eff, dp_eff, meanTw,
+        Re_p: iecRes.Re_p, Re_s: iecRes.Re_s,
+        Tp_grid: iecRes.Tp_grid,
+        Tw_grid: iecRes.Tw_grid,
+        ws_grid: iecRes.ws_grid,
+        Nx: iecRes.Nx,
+        Ny: iecRes.Ny,
+        lumped: lumpedRes
+      };
+
+      appState.lastResults = results;
+      appState.lastParams = params;
+
+      updateDashboardCards(results, params);
+      drawTubeStructure(params, results);
+      drawPsychrometricChart(results);
+      drawContourHeatmap(results);
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. UI UPDATES
+    // -------------------------------------------------------------------------
+    function updateUIReadouts(p) {
+      document.getElementById('val_Vp_m3s').textContent = `${p.Vp_dot.toFixed(3)} m³/s`;
+      document.getElementById('val_Vs_m3s').textContent = `${p.Vs_dot.toFixed(3)} m³/s`;
+      document.getElementById('val_film_delta').textContent = `${(p.film.delta_w * 1000).toFixed(2)} mm`;
+      document.getElementById('val_film_h').textContent = `${Math.round(p.film.h_film).toLocaleString()} W/m²K`;
+      document.getElementById('val_film_re').textContent = `${p.film.Re_film.toFixed(1)}`;
+      document.getElementById('total_tubes_badge').textContent = `${p.N_rows * p.N_cols} Tubes`;
+      document.getElementById('grid_res_label').textContent = `${p.Nx} × ${p.N_rows}`;
+
+      const secBox = document.getElementById('sec_air_inputs');
+      if (p.regen) {
+        secBox.classList.add('opacity-45', 'pointer-events-none');
+      } else {
+        secBox.classList.remove('opacity-45', 'pointer-events-none');
+      }
+    }
+
+    function updateDashboardCards(res, params) {
+      // Primary Inlet
+      document.getElementById('kpi_in_tdb').textContent = `${res.p_in.Tdb.toFixed(1)} °C`;
+      document.getElementById('kpi_in_rh').textContent = `${res.p_in.RH.toFixed(1)}%`;
+      document.getElementById('kpi_in_twb').textContent = `${res.p_in.Twb.toFixed(1)}°C`;
+      document.getElementById('kpi_in_w').textContent = `${res.p_in.w.toFixed(1)} g/kg`;
+
+      // Primary Outlet
+      const dT = res.p_out.Tdb - res.p_in.Tdb;
+      document.getElementById('kpi_out_tdb').textContent = `${res.p_out.Tdb.toFixed(1)} °C`;
+      document.getElementById('kpi_dt_drop').textContent = `(${dT.toFixed(1)} K)`;
+      document.getElementById('kpi_out_rh').textContent = `${res.p_out.RH.toFixed(1)}%`;
+      document.getElementById('kpi_out_twb').textContent = `${res.p_out.Twb.toFixed(1)}°C`;
+      document.getElementById('kpi_out_w').textContent = `${res.p_out.w.toFixed(1)} g/kg`;
+
+      // Secondary Exhaust
+      const dWs = res.s_out.w - res.s_in.w;
+      document.getElementById('kpi_sec_tdb').textContent = `${res.s_out.Tdb.toFixed(1)} °C`;
+      document.getElementById('kpi_sec_rh').textContent = `${res.s_out.RH.toFixed(1)}%`;
+      document.getElementById('kpi_sec_dw').textContent = `${dWs >= 0 ? '+' : ''}${dWs.toFixed(1)} g/kg`;
+      document.getElementById('kpi_sec_w').textContent = `${res.s_out.w.toFixed(1)} g/kg`;
+
+      // Performance
+      document.getElementById('kpi_q_kw').textContent = `${res.Q_kw.toFixed(2)} kW`;
+      document.getElementById('kpi_tr').textContent = `(${(res.Q_kw / 3.517).toFixed(2)} TR)`;
+      document.getElementById('kpi_wb_eff').textContent = `${res.wb_eff.toFixed(1)} %`;
+      document.getElementById('kpi_dp_eff').textContent = `${res.dp_eff.toFixed(1)} %`;
+      document.getElementById('kpi_tw_mean').textContent = `${res.meanTw.toFixed(1)} °C`;
+
+      // Geometry badges
+      document.getElementById('tube_count_sub').textContent = `${params.N_rows} rows × ${params.N_cols} tubes`;
+      document.getElementById('geom_re_p_badge').textContent = `Re_p: ${Math.round(res.Re_p).toLocaleString()}`;
+      document.getElementById('geom_re_s_badge').textContent = `Re_s: ${Math.round(res.Re_s).toLocaleString()}`;
+      document.getElementById('geom_dims_text').textContent =
+        `S_T: ${(params.ST * 1000).toFixed(1)} mm | S_L: ${(params.SL * 1000).toFixed(1)} mm | D_o: ${(params.Do * 1000).toFixed(1)} mm`;
+
+      // Lumped Whole-Bundle LMTD vs 2D Grid Comparison Table
+      if (res.lumped) {
+        const lm = res.lumped;
+        const fmtDelta = (val, unit, dec = 1) => `${val >= 0 ? '+' : ''}${val.toFixed(dec)}${unit}`;
+
+        document.getElementById('lumped_F_badge').textContent = `F = ${lm.F_factor.toFixed(3)}`;
+        document.getElementById('lumped_F_val').textContent = lm.F_factor.toFixed(3);
+        document.getElementById('lumped_dtlm_val').textContent = `${lm.dT_lm.toFixed(2)} K`;
+        document.getElementById('lumped_dhlm_val').textContent = `${(lm.dh_lm / 1000).toFixed(2)} kJ/kg`;
+
+        document.getElementById('cmp_2d_tp').textContent = `${res.p_out.Tdb.toFixed(1)} °C`;
+        document.getElementById('cmp_lm_tp').textContent = `${lm.Tp_out.toFixed(1)} °C`;
+        document.getElementById('cmp_df_tp').textContent = fmtDelta(lm.Tp_out - res.p_out.Tdb, ' K', 2);
+
+        document.getElementById('cmp_2d_ts').textContent = `${res.s_out.Tdb.toFixed(1)} °C`;
+        document.getElementById('cmp_lm_ts').textContent = `${lm.Ts_out.toFixed(1)} °C`;
+        document.getElementById('cmp_df_ts').textContent = fmtDelta(lm.Ts_out - res.s_out.Tdb, ' K', 2);
+
+        document.getElementById('cmp_2d_q').textContent = `${res.Q_kw.toFixed(2)} kW`;
+        document.getElementById('cmp_lm_q').textContent = `${lm.Q_kw.toFixed(2)} kW`;
+        const qPct = ((lm.Q_kw - res.Q_kw) / Math.max(0.01, res.Q_kw)) * 100.0;
+        document.getElementById('cmp_df_q').textContent = fmtDelta(qPct, '%', 1);
+
+        document.getElementById('cmp_2d_eff').textContent = `${res.wb_eff.toFixed(1)} %`;
+        document.getElementById('cmp_lm_eff').textContent = `${lm.wb_eff.toFixed(1)} %`;
+        document.getElementById('cmp_df_eff').textContent = fmtDelta(lm.wb_eff - res.wb_eff, '%', 1);
+
+        document.getElementById('cmp_2d_tw').textContent = `${res.meanTw.toFixed(1)} °C`;
+        document.getElementById('cmp_lm_tw').textContent = `${lm.Tw_mean.toFixed(1)} °C`;
+        document.getElementById('cmp_df_tw').textContent = fmtDelta(lm.Tw_mean - res.meanTw, ' K', 2);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. CANVAS HELPERS & VISUALIZATION 1: TUBE BUNDLE ARCHITECTURE SCHEMATIC
+    // -------------------------------------------------------------------------
+    function setupHiDPICanvas(canvas, fallbackH = 350) {
+      const dpr = window.devicePixelRatio || 1;
+      const parent = canvas.parentElement;
+      const rect = parent ? parent.getBoundingClientRect() : canvas.getBoundingClientRect();
+      const width = Math.max(280, Math.floor(rect.width || 520));
+      const height = Math.max(220, Math.floor(rect.height || fallbackH));
+
+      if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, width, height };
+    }
+
+    function lerpColor(t) {
+      const clamped = Math.max(0, Math.min(1, t));
+      const stops = [
+        { p: 0.0, r: 2, g: 132, b: 199 },   // Cool Blue (#0284c7)
+        { p: 0.35, r: 16, g: 185, b: 129 }, // Emerald (#10b981)
+        { p: 0.7, r: 245, g: 158, b: 11 },  // Amber (#f59e0b)
+        { p: 1.0, r: 225, g: 29, b: 72 }    // Hot Rose (#e11d48)
+      ];
+      for (let i = 0; i < stops.length - 1; i++) {
+        const s0 = stops[i];
+        const s1 = stops[i + 1];
+        if (clamped >= s0.p && clamped <= s1.p) {
+          const u = (clamped - s0.p) / (s1.p - s0.p);
+          const r = Math.round(s0.r + u * (s1.r - s0.r));
+          const g = Math.round(s0.g + u * (s1.g - s0.g));
+          const b = Math.round(s0.b + u * (s1.b - s0.b));
+          return `rgb(${r}, ${g}, ${b})`;
+        }
+      }
+      return 'rgb(225, 29, 72)';
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, lineWidth = 1.6) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const headLen = 6;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(ang - 0.4), y2 - headLen * Math.sin(ang - 0.4));
+      ctx.lineTo(x2 - headLen * Math.cos(ang + 0.4), y2 - headLen * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawDimensionLine(ctx, x1, y1, x2, y2, label, offsetDir = 1) {
+      ctx.save();
+      ctx.strokeStyle = '#334155';
+      ctx.fillStyle = '#0f172a';
+      ctx.lineWidth = 1.1;
+      ctx.font = '600 10px JetBrains Mono, monospace';
+
+      // Main line
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // End ticks
+      const isHoriz = Math.abs(y2 - y1) < 1;
+      if (isHoriz) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1 - 4);
+        ctx.lineTo(x1, y1 + 4);
+        ctx.moveTo(x2, y2 - 4);
+        ctx.lineTo(x2, y2 + 4);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText(label, 0.5 * (x1 + x2), y1 + (offsetDir > 0 ? -6 : 13));
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x1 - 4, y1);
+        ctx.lineTo(x1 + 4, y1);
+        ctx.moveTo(x2 - 4, y2);
+        ctx.lineTo(x2 + 4, y2);
+        ctx.stroke();
+        ctx.textAlign = offsetDir > 0 ? 'left' : 'right';
+        ctx.fillText(label, x1 + (offsetDir > 0 ? 6 : -6), 0.5 * (y1 + y2) + 3);
+      }
+      ctx.restore();
+    }
+
+    function drawTubeStructure(params, results) {
+      const canvas = document.getElementById('tubeCanvas');
+      if (!canvas) return;
+      const { ctx, width, height } = setupHiDPICanvas(canvas, 350);
+      ctx.clearRect(0, 0, width, height);
+
+      const { N_rows, N_cols, ST, SL, Do, Di, arrangement } = params;
+      const pad = { top: 44, right: 64, bottom: 38, left: 56 };
+      const availW = Math.max(120, width - pad.left - pad.right);
+      const availH = Math.max(120, height - pad.top - pad.bottom);
+
+      // True-to-scale aspect ratio mapping for (N_cols * ST) x (N_rows * SL)
+      const extraStagger = arrangement === 'staggered' ? 0.5 * ST : 0;
+      const physW = Math.max(ST, (N_cols - 1) * ST + extraStagger + Do * 1.4);
+      const physH = Math.max(SL, (N_rows - 1) * SL + Do * 1.4);
+      const scale = Math.min(availW / physW, availH / physH);
+
+      const bundleW = physW * scale;
+      const bundleH = physH * scale;
+      const startX = pad.left + (availW - bundleW) * 0.5 + (Do * 0.7) * scale;
+      const startY = pad.top + (availH - bundleH) * 0.5 + (Do * 0.7) * scale;
+
+      const pitchX = ST * scale;
+      const pitchY = SL * scale;
+      const rOuter = Math.max(3.5, 0.5 * Do * scale);
+      const rInner = Math.max(2.0, rOuter * (Di / Do));
+
+      // Secondary cross-flow direction banner & arrows
+      const isBottomUp = params.secAirDir === 'bottom_up';
+      const numArrows = Math.min(6, Math.max(3, N_cols));
+
+      if (!isBottomUp) {
+        ctx.fillStyle = '#0369a1';
+        ctx.font = '600 10.5px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Spray Water ↓ & Secondary Air Inlet (T_s,in = ${results.s_in.Tdb.toFixed(1)}°C) ↓`, width * 0.5, 16);
+
+        for (let a = 0; a < numArrows; a++) {
+          const ax = startX + (a / Math.max(1, numArrows - 1)) * Math.max(pitchX, (N_cols - 1) * pitchX);
+          drawArrow(ctx, ax, 22, ax, Math.max(28, startY - rOuter - 6), '#0284c7', 1.4);
+        }
+      } else {
+        ctx.fillStyle = '#0284c7';
+        ctx.font = '600 10.5px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Spray Water ↓ | ↑ Secondary Exhaust (T_s,out = ${results.s_out.Tdb.toFixed(1)}°C, RH = ${results.s_out.RH.toFixed(0)}%)`, width * 0.5, 16);
+
+        for (let a = 0; a < numArrows; a++) {
+          const ax = startX + (a / Math.max(1, numArrows - 1)) * Math.max(pitchX, (N_cols - 1) * pitchX);
+          drawArrow(ctx, ax, Math.max(34, startY - rOuter - 4), ax, 21, '#4f46e5', 1.4);
+        }
+      }
+
+      // Draw tubes row by row (j = 0 .. N_rows - 1)
+      const centers = [];
+      for (let j = 0; j < N_rows; j++) {
+        const rowFrac = N_rows > 1 ? j / (N_rows - 1) : 0.5;
+        // Primary air temperature gradient across rows (cooler in upper rows where secondary air enters)
+        const rowTp = results.Tp_grid ? results.Tp_grid[Math.floor(results.Nx * 0.5)][j] : results.p_out.Tdb;
+        const normT = (rowTp - results.s_in.Twb) / Math.max(1.0, results.p_in.Tdb - results.s_in.Twb);
+        const coreColor = lerpColor(normT);
+
+        const rowOffset = (arrangement === 'staggered' && j % 2 === 1) ? 0.5 * pitchX : 0;
+        const rowPts = [];
+
+        for (let c = 0; c < N_cols; c++) {
+          const cx = startX + c * pitchX + rowOffset;
+          const cy = startY + j * pitchY;
+          rowPts.push({ x: cx, y: cy });
+
+          // Falling liquid water film halo
+          ctx.beginPath();
+          ctx.arc(cx, cy, rOuter + 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+          ctx.fill();
+
+          // Outer tube wall
+          ctx.beginPath();
+          ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+          ctx.fillStyle = '#475569';
+          ctx.fill();
+
+          // Inner primary air core
+          ctx.beginPath();
+          ctx.arc(cx, cy, rInner, 0, Math.PI * 2);
+          ctx.fillStyle = coreColor;
+          ctx.fill();
+        }
+        centers.push(rowPts);
+      }
+
+      // Engineering Dimension Callouts for S_T, S_L, and D_o
+      if (centers.length > 0 && centers[0].length >= 2) {
+        const p00 = centers[0][0];
+        const p01 = centers[0][1];
+        const dimY = Math.max(30, p00.y - rOuter - 10);
+        // Extension lines for S_T
+        ctx.save();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(p00.x, p00.y);
+        ctx.lineTo(p00.x, dimY);
+        ctx.moveTo(p01.x, p01.y);
+        ctx.lineTo(p01.x, dimY);
+        ctx.stroke();
+        ctx.restore();
+        drawDimensionLine(ctx, p00.x, dimY, p01.x, dimY, `S_T=${(ST * 1000).toFixed(1)}mm`, 1);
+      }
+
+      if (centers.length >= 2) {
+        const p0 = centers[0][0];
+        const p1 = centers[1][0];
+        const dimX = Math.max(14, p0.x - rOuter - 12);
+        ctx.save();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(dimX, p0.y);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(dimX, p1.y);
+        ctx.stroke();
+        ctx.restore();
+        drawDimensionLine(ctx, dimX, p0.y, dimX, p1.y, `S_L=${(SL * 1000).toFixed(1)}`, -1);
+      }
+
+      // Outer diameter leader callout on bottom-right tube
+      const lastRow = centers[centers.length - 1];
+      if (lastRow && lastRow.length > 0) {
+        const pt = lastRow[lastRow.length - 1];
+        ctx.save();
+        ctx.strokeStyle = '#0f172a';
+        ctx.fillStyle = '#0f172a';
+        ctx.lineWidth = 1.1;
+        const lx = pt.x + rOuter * 0.7;
+        const ly = pt.y + rOuter * 0.7;
+        const ex = Math.min(width - 54, pt.x + rOuter + 14);
+        const ey = Math.min(height - 24, pt.y + rOuter + 10);
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(ex, ey);
+        ctx.lineTo(ex + 8, ey);
+        ctx.stroke();
+        ctx.font = '600 10px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Ø${(Do * 1000).toFixed(1)}`, ex + 10, ey + 3);
+        ctx.restore();
+      }
+
+      // Bottom inlet/exhaust label
+      if (!isBottomUp) {
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = '600 10.5px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`↓ Humidified Secondary Exhaust (T_s,out = ${results.s_out.Tdb.toFixed(1)}°C, RH = ${results.s_out.RH.toFixed(0)}%)`, width * 0.5, height - 8);
+      } else {
+        ctx.fillStyle = '#0369a1';
+        ctx.font = '600 10.5px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`↑ Secondary Air Inlet (T_s,in = ${results.s_in.Tdb.toFixed(1)}°C, RH = ${results.s_in.RH.toFixed(0)}%) ↑`, width * 0.5, height - 8);
+
+        const bottomTubeY = startY + (N_rows - 1) * pitchY + rOuter + 6;
+        for (let a = 0; a < numArrows; a++) {
+          const ax = startX + (a / Math.max(1, numArrows - 1)) * Math.max(pitchX, (N_cols - 1) * pitchX);
+          drawArrow(ctx, ax, height - 20, ax, Math.min(height - 26, bottomTubeY), '#0284c7', 1.4);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. VISUALIZATION 2: PSYCHROMETRIC PROCESS TRAJECTORY CHART
+    // -------------------------------------------------------------------------
+    function drawPsychrometricChart(results) {
+      const canvas = document.getElementById('psychroCanvas');
+      if (!canvas) return;
+      const { ctx, width, height } = setupHiDPICanvas(canvas, 350);
+      ctx.clearRect(0, 0, width, height);
+
+      const pad = { top: 22, right: 48, bottom: 38, left: 22 };
+      const plotW = Math.max(120, width - pad.left - pad.right);
+      const plotH = Math.max(120, height - pad.top - pad.bottom);
+
+      const tMin = 10.0;
+      const tMax = 52.0;
+      const wMin = 0.0;
+      const wMax = 32.0; // g/kg
+
+      const toX = (T) => pad.left + ((T - tMin) / (tMax - tMin)) * plotW;
+      const toY = (wGkg) => pad.top + plotH - ((wGkg - wMin) / (wMax - wMin)) * plotH;
+
+      // Grid lines
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillStyle = '#64748b';
+
+      for (let T = 10; T <= 50; T += 5) {
+        const x = toX(T);
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, pad.top + plotH);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText(`${T}°`, x, pad.top + plotH + 14);
+      }
+
+      for (let w = 0; w <= 30; w += 5) {
+        const y = toY(w);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + plotW, y);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText(`${w}`, pad.left + plotW + 6, y + 3);
+      }
+
+      // Constant RH curves (20%, 40%, 60%, 80%, 100%)
+      const rhLevels = [0.2, 0.4, 0.6, 0.8, 1.0];
+      rhLevels.forEach((rh) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = rh === 1.0 ? '#0284c7' : 'rgba(148, 163, 184, 0.55)';
+        ctx.lineWidth = rh === 1.0 ? 1.8 : 1.0;
+        if (rh < 1.0) ctx.setLineDash([3, 3]);
+
+        let started = false;
+        for (let T = tMin; T <= tMax; T += 0.5) {
+          const wGkg = humidityRatioFromRH(T, rh) * 1000.0;
+          if (wGkg <= wMax) {
+            const px = toX(T);
+            const py = toY(wGkg);
+            if (!started) {
+              ctx.moveTo(px, py);
+              started = true;
+            } else {
+              ctx.lineTo(px, py);
+            }
+          }
+        }
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Helper to draw process trajectory arrow & state point
+      const drawProcess = (pt1, pt2, color, label1, label2) => {
+        const x1 = toX(pt1.Tdb), y1 = toY(pt1.w);
+        const x2 = toX(pt2.Tdb), y2 = toY(pt2.w);
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Arrowhead at pt2
+        const ang = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 8 * Math.cos(ang - 0.35), y2 - 8 * Math.sin(ang - 0.35));
+        ctx.lineTo(x2 - 8 * Math.cos(ang + 0.35), y2 - 8 * Math.sin(ang + 0.35));
+        ctx.closePath();
+        ctx.fill();
+
+        // Points
+        [
+          { x: x1, y: y1, lbl: label1, dy: -10 },
+          { x: x2, y: y2, lbl: label2, dy: -10 }
+        ].forEach((p) => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.lineWidth = 2.2;
+          ctx.strokeStyle = color;
+          ctx.stroke();
+
+          ctx.font = '700 10.5px JetBrains Mono, monospace';
+          ctx.fillStyle = '#0f172a';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.lbl, p.x, p.y + p.dy);
+        });
+        ctx.restore();
+      };
+
+      // Primary Sensible Cooling (P1 -> P2) & Secondary Humidification (S1 -> S2)
+      drawProcess(results.p_in, results.p_out, '#f59e0b', 'P₁', 'P₂');
+      drawProcess(results.s_in, results.s_out, '#4f46e5', 'S₁', 'S₂');
+
+      // Axis Titles
+      ctx.fillStyle = '#475569';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Dry-Bulb Temperature T_db (°C)', pad.left + plotW / 2, height - 6);
+
+      ctx.save();
+      ctx.translate(width - 10, pad.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillText('Humidity Ratio ω (g/kg)', 0, 0);
+      ctx.restore();
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. VISUALIZATION 3: 2D SPATIAL TEMPERATURE & HUMIDITY CONTOUR HEATMAP
+    // -------------------------------------------------------------------------
+    let contourPlotBounds = null;
+
+    function getFieldValueAt(results, field, i, j) {
+      const Nx = results.Nx;
+      const Ny = results.Ny;
+      const ci = Math.min(Nx - 1, Math.max(0, i));
+      const cj = Math.min(Ny - 1, Math.max(0, j));
+
+      if (field === 'Tp') {
+        return 0.5 * (results.Tp_grid[ci][cj] + results.Tp_grid[ci + 1][cj]);
+      } else if (field === 'Tw') {
+        return results.Tw_grid[ci][cj];
+      } else {
+        return 0.5 * (results.ws_grid[ci][cj] + results.ws_grid[ci][cj + 1]) * 1000.0;
+      }
+    }
+
+    function sampleBilinearField(results, field, u, v) {
+      const Nx = results.Nx;
+      const Ny = results.Ny;
+      const fx = Math.max(0, Math.min(Nx - 1, u * (Nx - 1)));
+      const fy = Math.max(0, Math.min(Ny - 1, v * (Ny - 1)));
+
+      const i0 = Math.floor(fx);
+      const j0 = Math.floor(fy);
+      const i1 = Math.min(Nx - 1, i0 + 1);
+      const j1 = Math.min(Ny - 1, j0 + 1);
+
+      const tx = fx - i0;
+      const ty = fy - j0;
+
+      const v00 = getFieldValueAt(results, field, i0, j0);
+      const v10 = getFieldValueAt(results, field, i1, j0);
+      const v01 = getFieldValueAt(results, field, i0, j1);
+      const v11 = getFieldValueAt(results, field, i1, j1);
+
+      return (1 - tx) * (1 - ty) * v00 +
+             tx * (1 - ty) * v10 +
+             (1 - tx) * ty * v01 +
+             tx * ty * v11;
+    }
+
+    function drawContourHeatmap(results) {
+      const canvas = document.getElementById('contourCanvas');
+      if (!canvas) return;
+      const { ctx, width, height } = setupHiDPICanvas(canvas, 340);
+      ctx.clearRect(0, 0, width, height);
+
+      const field = appState.contourField || 'Tp';
+      const Nx = results.Nx;
+      const Ny = results.Ny;
+
+      let vMin = Infinity;
+      let vMax = -Infinity;
+      for (let i = 0; i < Nx; i++) {
+        for (let j = 0; j < Ny; j++) {
+          const val = getFieldValueAt(results, field, i, j);
+          if (Number.isFinite(val)) {
+            if (val < vMin) vMin = val;
+            if (val > vMax) vMax = val;
+          }
+        }
+      }
+      if (!Number.isFinite(vMin) || !Number.isFinite(vMax)) {
+        vMin = 20.0;
+        vMax = 40.0;
+      }
+      if (Math.abs(vMax - vMin) < 1e-4) {
+        vMax = vMin + 0.5;
+      }
+
+      const unit = field === 'ws' ? ' g/kg' : '°C';
+      const decimals = field === 'ws' ? 2 : 1;
+      document.getElementById('cb_max').textContent = `${vMax.toFixed(decimals)}${unit}`;
+      document.getElementById('cb_mid').textContent = `${(0.5 * (vMin + vMax)).toFixed(decimals)}${unit}`;
+      document.getElementById('cb_min').textContent = `${vMin.toFixed(decimals)}${unit}`;
+
+      const pad = { top: 24, right: 24, bottom: 44, left: 62 };
+      const plotW = Math.max(120, width - pad.left - pad.right);
+      const plotH = Math.max(120, height - pad.top - pad.bottom);
+      contourPlotBounds = { pad, plotW, plotH, vMin, vMax };
+
+      // Smooth bilinearly-interpolated contour rendering
+      const resX = Math.min(180, Math.max(90, Math.round(plotW / 3)));
+      const resY = Math.min(120, Math.max(60, Math.round(plotH / 3)));
+      const cellW = plotW / resX;
+      const cellH = plotH / resY;
+
+      for (let ix = 0; ix < resX; ix++) {
+        const u = (ix + 0.5) / resX;
+        for (let iy = 0; iy < resY; iy++) {
+          const v = (iy + 0.5) / resY;
+          const val = sampleBilinearField(results, field, u, v);
+          const norm = (val - vMin) / (vMax - vMin);
+          ctx.fillStyle = lerpColor(norm);
+          ctx.fillRect(
+            pad.left + ix * cellW,
+            pad.top + iy * cellH,
+            cellW + 0.8,
+            cellH + 0.8
+          );
+        }
+      }
+
+      // Draw crisp contour isolines (Marching Squares approximation)
+      const numLevels = 6;
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.38)';
+      ctx.lineWidth = 1.0;
+      for (let lvl = 1; lvl < numLevels; lvl++) {
+        const threshold = vMin + (lvl / numLevels) * (vMax - vMin);
+        ctx.beginPath();
+        for (let ix = 0; ix < resX - 1; ix++) {
+          const u0 = (ix + 0.5) / resX;
+          const u1 = (ix + 1.5) / resX;
+          for (let iy = 0; iy < resY - 1; iy++) {
+            const v0 = (iy + 0.5) / resY;
+            const v1 = (iy + 1.5) / resY;
+            const a = sampleBilinearField(results, field, u0, v0) >= threshold;
+            const b = sampleBilinearField(results, field, u1, v0) >= threshold;
+            const c = sampleBilinearField(results, field, u1, v1) >= threshold;
+            const d = sampleBilinearField(results, field, u0, v1) >= threshold;
+            if (a !== b || b !== c || c !== d || d !== a) {
+              const px = pad.left + (ix + 1) * cellW;
+              const py = pad.top + (iy + 1) * cellH;
+              ctx.moveTo(px - cellW * 0.5, py);
+              ctx.lineTo(px + cellW * 0.5, py);
+            }
+          }
+        }
+        ctx.stroke();
+      }
+
+      // Subtle tube-row horizontal dividers
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 0.8;
+      for (let r = 1; r < Ny; r++) {
+        const yLine = pad.top + (r / Ny) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yLine);
+        ctx.lineTo(pad.left + plotW, yLine);
+        ctx.stroke();
+      }
+
+      // Frame border
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+
+      // X-axis ticks & label (Primary tube length 0 -> L)
+      const L_m = appState.lastParams ? appState.lastParams.L : 0.8;
+      ctx.fillStyle = '#475569';
+      ctx.font = '10.5px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      for (let k = 0; k <= 5; k++) {
+        const frac = k / 5;
+        const xTick = pad.left + frac * plotW;
+        ctx.fillText(`${(frac * L_m).toFixed(2)}m`, xTick, pad.top + plotH + 15);
+      }
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillText('Primary Airflow Direction Along Tube Length x (0 → L) →', pad.left + plotW / 2, height - 8);
+
+      // Y-axis ticks & label (Secondary airflow row 1 -> N_rows)
+      ctx.textAlign = 'right';
+      ctx.font = '10.5px JetBrains Mono, monospace';
+      const stepY = Math.max(1, Math.ceil(Ny / 6));
+      for (let r = 0; r < Ny; r += stepY) {
+        const yTick = pad.top + ((r + 0.5) / Ny) * plotH;
+        ctx.fillText(`Row ${r + 1}`, pad.left - 8, yTick + 3);
+      }
+      ctx.save();
+      ctx.translate(15, pad.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.font = '600 11px Inter, sans-serif';
+      const isBottomUpAxis = appState.lastParams && appState.lastParams.secAirDir === 'bottom_up';
+      ctx.fillText(isBottomUpAxis ? 'Secondary Air Upward ↑ (Row N → Row 1)' : '← Secondary Air Downward ↓ (Row 1 → Row N)', 0, 0);
+      ctx.restore();
+    }
+
+    function setContourField(field) {
+      appState.contourField = field;
+      const tabs = {
+        Tp: document.getElementById('tab_contour_tp'),
+        Tw: document.getElementById('tab_contour_tw'),
+        ws: document.getElementById('tab_contour_ws')
+      };
+      Object.keys(tabs).forEach((key) => {
+        if (!tabs[key]) return;
+        if (key === field) {
+          tabs[key].className = 'px-3 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+        } else {
+          tabs[key].className = 'px-3 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+      if (appState.lastResults) {
+        drawContourHeatmap(appState.lastResults);
+      }
+    }
+
+    function setArrangement(arr) {
+      appState.arrangement = arr;
+      const btnStag = document.getElementById('btn_staggered');
+      const btnInl = document.getElementById('btn_inline');
+      if (arr === 'staggered') {
+        btnStag.className = 'py-1.5 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+        btnInl.className = 'py-1.5 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+      } else {
+        btnInl.className = 'py-1.5 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+        btnStag.className = 'py-1.5 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+      }
+      runSimulation();
+    }
+
+    function setSecAirDirection(dir) {
+      appState.secAirDir = dir;
+      const btnDown = document.getElementById('btn_sec_top_down');
+      const btnUp = document.getElementById('btn_sec_bottom_up');
+      const badge = document.getElementById('sec_dir_badge');
+      const activeCls = 'py-1.5 px-2 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+      const inactiveCls = 'py-1.5 px-2 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+
+      if (dir === 'bottom_up') {
+        btnUp.className = activeCls;
+        btnDown.className = inactiveCls;
+        badge.textContent = 'Counter-Flow (↑)';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold';
+      } else {
+        btnDown.className = activeCls;
+        btnUp.className = inactiveCls;
+        badge.textContent = 'Co-Flow (↓)';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold';
+      }
+      runSimulation();
+    }
+
+    function setFilmMode(mode) {
+      appState.filmMode = mode;
+      const btnNusselt = document.getElementById('btn_film_nusselt');
+      const btnConst = document.getElementById('btn_film_const');
+      const nusseltBox = document.getElementById('nusselt_film_controls');
+      const constBox = document.getElementById('const_film_controls');
+      const badge = document.getElementById('film_mode_badge');
+      const activeCls = 'py-1.5 px-2 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+      const inactiveCls = 'py-1.5 px-2 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+
+      if (mode === 'constant') {
+        btnConst.className = activeCls;
+        btnNusselt.className = inactiveCls;
+        nusseltBox.classList.add('hidden');
+        constBox.classList.remove('hidden');
+        badge.textContent = 'Constant h_film';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold';
+      } else {
+        btnNusselt.className = activeCls;
+        btnConst.className = inactiveCls;
+        constBox.classList.add('hidden');
+        nusseltBox.classList.remove('hidden');
+        badge.textContent = 'Nusselt (LPM)';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold';
+      }
+      runSimulation();
+    }
+
+    function setTwMode(mode) {
+      appState.twMode = mode;
+      const btnSolved = document.getElementById('btn_tw_solved');
+      const btnSupplied = document.getElementById('btn_tw_supplied');
+      const btnConst = document.getElementById('btn_tw_const');
+      const controls = document.getElementById('const_tw_controls');
+      const badge = document.getElementById('tw_mode_badge');
+      const lbl = document.getElementById('tw_input_label');
+      const hint = document.getElementById('tw_input_hint');
+
+      const activeCls = 'py-1.5 px-1 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+      const inactiveCls = 'py-1.5 px-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+
+      btnSolved.className = mode === 'solved' ? activeCls : inactiveCls;
+      btnSupplied.className = mode === 'supplied' ? activeCls : inactiveCls;
+      btnConst.className = mode === 'constant' ? activeCls : inactiveCls;
+
+      if (mode === 'supplied') {
+        controls.classList.remove('hidden');
+        lbl.textContent = 'Water Inlet Temp T_w,in (°C)';
+        hint.textContent = '3-way marching energy balance';
+        badge.textContent = 'Supplied T_w,in';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold';
+      } else if (mode === 'constant') {
+        controls.classList.remove('hidden');
+        lbl.textContent = 'Fixed Water Temp T_w (°C)';
+        hint.textContent = 'Isothermal water film';
+        badge.textContent = 'Constant T_w';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-semibold';
+      } else {
+        controls.classList.add('hidden');
+        badge.textContent = 'Adiabatic T_w(x,y)';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold';
+      }
+      runSimulation();
+    }
+
+    function snapTwToWetBulb() {
+      const Ts = parseFloat(document.getElementById('Ts_in').value);
+      const RHs = parseFloat(document.getElementById('RHs_in').value) / 100.0;
+      const ws = humidityRatioFromRH(Ts, RHs);
+      const twb = wetBulbTemp(Ts, ws);
+      document.getElementById('Tw_const').value = twb.toFixed(1);
+      runSimulation();
+    }
+
+    function setMaterial(kVal, name) {
+      document.getElementById('k_wall').value = kVal;
+      document.getElementById('mat_label').textContent = `${name} (${kVal})`;
+      runSimulation();
+    }
+
+    function applyClimatePreset(type) {
+      if (type === 'hot_dry') {
+        document.getElementById('Tp_in').value = 42.0;
+        document.getElementById('RHp_in').value = 22;
+        document.getElementById('Ts_in').value = 42.0;
+        document.getElementById('RHs_in').value = 22;
+      } else if (type === 'composite') {
+        document.getElementById('Tp_in').value = 38.0;
+        document.getElementById('RHp_in').value = 40;
+        document.getElementById('Ts_in').value = 38.0;
+        document.getElementById('RHs_in').value = 40;
+      } else if (type === 'warm_humid') {
+        document.getElementById('Tp_in').value = 33.0;
+        document.getElementById('RHp_in').value = 70;
+        document.getElementById('Ts_in').value = 33.0;
+        document.getElementById('RHs_in').value = 70;
+      }
+      runSimulation();
+    }
+
+    function toggleEquationsModal(show) {
+      const modal = document.getElementById('equationsModal');
+      if (!modal) return;
+      if (show) {
+        modal.classList.remove('hidden');
+        if (typeof renderMathInElement === 'function') {
+          renderMathInElement(modal, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ]
+          });
+        }
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Interactive Hover Inspection for 2D Contour Canvas
+    function initContourHoverTooltip() {
+      const canvas = document.getElementById('contourCanvas');
+      const tooltip = document.getElementById('contourTooltip');
+      if (!canvas || !tooltip) return;
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (!appState.lastResults || !contourPlotBounds) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const { pad, plotW, plotH } = contourPlotBounds;
+
+        if (mx < pad.left || mx > pad.left + plotW || my < pad.top || my > pad.top + plotH) {
+          tooltip.classList.add('hidden');
+          return;
+        }
+
+        const u = (mx - pad.left) / plotW;
+        const v = (my - pad.top) / plotH;
+        const res = appState.lastResults;
+        const L_m = appState.lastParams ? appState.lastParams.L : 0.8;
+
+        const tpVal = sampleBilinearField(res, 'Tp', u, v);
+        const twVal = sampleBilinearField(res, 'Tw', u, v);
+        const wsVal = sampleBilinearField(res, 'ws', u, v);
+        const rowNum = Math.min(res.Ny, Math.max(1, Math.floor(v * res.Ny) + 1));
+
+        tooltip.innerHTML = `
+          <div class="text-cyan-300 font-semibold mb-1">x = ${(u * L_m).toFixed(2)} m | Row ${rowNum}/${res.Ny}</div>
+          <div>Primary T_p : <span class="text-amber-300">${tpVal.toFixed(2)} °C</span></div>
+          <div>Water Film T_w: <span class="text-sky-300">${twVal.toFixed(2)} °C</span></div>
+          <div>Sec. ω_s      : <span class="text-emerald-300">${wsVal.toFixed(2)} g/kg</span></div>
+        `;
+        tooltip.classList.remove('hidden');
+
+        const tipX = mx + 14 + 170 > rect.width ? mx - 180 : mx + 14;
+        const tipY = my + 14 + 90 > rect.height ? my - 95 : my + 14;
+        tooltip.style.left = `${Math.max(8, tipX)}px`;
+        tooltip.style.top = `${Math.max(8, tipY)}px`;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        tooltip.classList.add('hidden');
+      });
+    }
+
+    // Bind live input listeners
+    const inputIds = [
+      'Tp_in', 'RHp_in', 'Vp_cmh',
+      'regen_mode', 'Ts_in', 'RHs_in', 'Vs_cmh', 'Le_num', 'Vw_lpm', 'h_film_const', 'Tw_const',
+      'D_o', 'D_i', 'L', 'N_rows', 'N_cols', 'S_T', 'S_L', 'k_wall'
+    ];
+    inputIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', runSimulation);
+        el.addEventListener('change', runSimulation);
+      }
+    });
+
+    const kWallEl = document.getElementById('k_wall');
+    if (kWallEl) {
+      kWallEl.addEventListener('input', (e) => {
+        const matLbl = document.getElementById('mat_label');
+        if (matLbl) matLbl.textContent = `Custom (${e.target.value})`;
+      });
+    }
+
+    // Redraw all canvases cleanly on container resize
+    function redrawAllCharts() {
+      if (appState.lastResults && appState.lastParams) {
+        drawTubeStructure(appState.lastParams, appState.lastResults);
+        drawPsychrometricChart(appState.lastResults);
+        drawContourHeatmap(appState.lastResults);
+      } else {
+        runSimulation();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initContourHoverTooltip();
+      requestAnimationFrame(() => runSimulation());
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => {
+          requestAnimationFrame(redrawAllCharts);
+        });
+        ['tubeCanvasBox', 'psychroCanvasBox', 'contourCanvasBox'].forEach((boxId) => {
+          const box = document.getElementById(boxId);
+          if (box) ro.observe(box);
+        });
+      }
+    });
+
+    window.addEventListener('load', () => {
+      requestAnimationFrame(redrawAllCharts);
+    });
+
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(redrawAllCharts);
+    });
+  </script>
+</body>
+</html>
