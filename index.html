@@ -115,20 +115,37 @@
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label for="Tp_in" class="block font-medium text-slate-700 mb-1">Dry-Bulb $T_{p,\text{in}}$ (°C)</label>
-              <input id="Tp_in" type="number" min="5" max="65" step="0.1" value="42.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="Tp_in" type="number" min="5" max="65" step="0.1" value="38.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="RHp_in" class="block font-medium text-slate-700 mb-1">Rel. Humidity $RH_{p,\text{in}}$ (%)</label>
-              <input id="RHp_in" type="number" min="1" max="100" step="0.5" value="22.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="RHp_in" type="number" min="1" max="100" step="0.5" value="38.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
           </div>
 
           <div>
             <div class="flex justify-between items-center mb-1">
               <label for="Vp_cmh" class="font-medium text-slate-700">Primary Airflow $\dot{V}_p$ (CMH)</label>
-              <span id="val_Vp_m3s" class="font-mono-num text-[11px] text-slate-500">0.500 m³/s</span>
+              <span id="val_Vp_m3s" class="font-mono-num text-[11px] text-slate-500">0.278 m³/s</span>
             </div>
-            <input id="Vp_cmh" type="number" min="50" max="50000" step="10" value="1800" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+            <input id="Vp_cmh" type="number" min="50" max="50000" step="10" value="1000" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+          </div>
+
+          <!-- Internal Tube Convection Model Selector (Gnielinski + Entrance Factor) -->
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-slate-700">Internal $h_p$ Correlation</span>
+              <span id="internal_nu_badge" class="text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 font-semibold">Gnielinski + Entrance</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg text-[11px]">
+              <button id="btn_nu_standard" type="button" onclick="setInternalNuMode('standard')" class="py-1.5 px-1.5 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Standard Gnielinski</button>
+              <button id="btn_nu_finite" type="button" onclick="setInternalNuMode('finite')" class="py-1.5 px-1.5 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition">Gnielinski + Entrance</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200/80 font-mono-num text-[10px] text-slate-600 text-center">
+              <div><span class="text-slate-400 block">Nu_p</span><span id="val_nu_p" class="font-bold text-rose-700">32.4</span></div>
+              <div><span class="text-slate-400 block">Entrance Factor</span><span id="val_nu_factor" class="font-bold text-slate-800">1.054×</span></div>
+              <div><span class="text-slate-400 block">h_p</span><span id="val_hp" class="font-bold text-slate-700">77.5 W/m²K</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -157,11 +174,11 @@
           <div id="sec_air_inputs" class="grid grid-cols-2 gap-2.5 transition-opacity">
             <div>
               <label for="Ts_in" class="block font-medium text-slate-700 mb-1">Sec. Temp $T_{s,\text{in}}$ (°C)</label>
-              <input id="Ts_in" type="number" min="5" max="65" step="0.1" value="42.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="Ts_in" type="number" min="5" max="65" step="0.1" value="38.0" class="w-full font-mono-num font-semibold text-rose-700 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="RHs_in" class="block font-medium text-slate-700 mb-1">Sec. RH $RH_{s,\text{in}}$ (%)</label>
-              <input id="RHs_in" type="number" min="1" max="100" step="0.5" value="22.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="RHs_in" type="number" min="1" max="100" step="0.5" value="38.0" class="w-full font-mono-num font-semibold text-cyan-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
           </div>
 
@@ -170,8 +187,8 @@
               <div class="flex justify-between items-center mb-1">
                 <label for="Vs_cmh" class="font-medium text-slate-700">Sec. Flow $\dot{V}_s$ (CMH)</label>
               </div>
-              <input id="Vs_cmh" type="number" min="50" max="50000" step="10" value="2160" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
-              <span id="val_Vs_m3s" class="block font-mono-num text-[10px] text-slate-400 mt-0.5">0.600 m³/s</span>
+              <input id="Vs_cmh" type="number" min="50" max="50000" step="10" value="1000" class="w-full font-mono-num font-semibold text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <span id="val_Vs_m3s" class="block font-mono-num text-[10px] text-slate-400 mt-0.5">0.278 m³/s</span>
             </div>
 
             <div>
@@ -256,7 +273,7 @@
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 3. IEC Tube Bundle Geometry
           </h2>
-          <span id="total_tubes_badge" class="text-[11px] font-mono-num bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">80 Tubes</span>
+          <span id="total_tubes_badge" class="text-[11px] font-mono-num bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">192 Tubes</span>
         </div>
         <div class="p-4 space-y-3.5 text-xs">
           <!-- Arrangement Toggle -->
@@ -268,40 +285,40 @@
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label for="N_rows" class="block font-medium text-slate-700 mb-1">Rows ($N_{\text{rows}}$)</label>
-              <input id="N_rows" type="number" min="2" max="30" step="1" value="8" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="N_rows" type="number" min="2" max="30" step="1" value="12" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="N_cols" class="block font-medium text-slate-700 mb-1">Tubes/Row ($N_{\text{cols}}$)</label>
-              <input id="N_cols" type="number" min="2" max="30" step="1" value="10" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="N_cols" type="number" min="2" max="30" step="1" value="16" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label for="D_o" class="block font-medium text-slate-700 mb-1">Outer Dia $D_o$ (mm)</label>
-              <input id="D_o" type="number" min="3" max="50" step="0.5" value="12.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="D_o" type="number" min="3" max="50" step="0.5" value="25.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="D_i" class="block font-medium text-slate-700 mb-1">Inner Dia $D_i$ (mm)</label>
-              <input id="D_i" type="number" min="2" max="48" step="0.5" value="11.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="D_i" type="number" min="2" max="48" step="0.5" value="21.9" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label for="S_T" class="block font-medium text-slate-700 mb-1">Trans. Pitch $S_T$ (mm)</label>
-              <input id="S_T" type="number" min="5" max="100" step="0.5" value="24.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="S_T" type="number" min="5" max="100" step="0.5" value="36.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="S_L" class="block font-medium text-slate-700 mb-1">Long. Pitch $S_L$ (mm)</label>
-              <input id="S_L" type="number" min="5" max="100" step="0.5" value="20.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="S_L" type="number" min="5" max="100" step="0.5" value="36.0" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <label for="L" class="block font-medium text-slate-700 mb-1">Tube Length $L$ (m)</label>
-              <input id="L" type="number" min="0.1" max="4.0" step="0.05" value="0.80" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
+              <input id="L" type="number" min="0.1" max="4.0" step="0.05" value="1.00" class="w-full font-mono-num px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-cyan-600">
             </div>
             <div>
               <label for="k_wall" class="block font-medium text-slate-700 mb-1">Wall $k_w$ (W/m·K)</label>
@@ -504,7 +521,7 @@
           <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
             <div>
               <h3 class="text-sm font-bold text-slate-800">Cross-Flow Tube Bundle Geometry &amp; Pitch Schematic</h3>
-              <p class="text-xs text-slate-500">Exact tube array (<span id="tube_count_sub" class="font-mono-num font-semibold text-slate-700">8 rows × 10 tubes</span>) with live $S_T$, $S_L$, and $D_o$ dimensions</p>
+              <p class="text-xs text-slate-500">Exact tube array (<span id="tube_count_sub" class="font-mono-num font-semibold text-slate-700">12 rows × 16 tubes</span>) with live $S_T$, $S_L$, and $D_o$ dimensions</p>
             </div>
             <div class="flex items-center gap-1.5">
               <span id="geom_re_p_badge" class="font-mono-num text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">Re_p: 9,850</span>
@@ -687,9 +704,16 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-                <div class="font-semibold text-slate-800 mb-1">Internal Tube Flow (Gnielinski / Laminar)</div>
-                $$Nu_p = \begin{cases} 3.66 & Re_p < 2300 \\ \dfrac{(f/8)(Re_p - 1000)Pr}{1 + 12.7\sqrt{f/8}(Pr^{2/3} - 1)} & Re_p \ge 2300 \end{cases}$$
-                $$f = (0.79 \ln Re_p - 1.64)^{-2}, \quad h_p = \frac{Nu_p k_{\text{air}}}{D_i}$$
+                <div class="font-semibold text-slate-800 mb-1">Internal Tube Flow (Gnielinski + Finite-Length Entrance Factor)</div>
+                <p class="text-xs text-slate-600 mb-2">
+                  Standard Gnielinski evaluates base $Nu_{p,\text{base}}$ for fully-developed turbulent/transitional tube flow ($Re_p \ge 2300$). When Finite-Length mode is selected, an entrance enhancement factor $\left[1 + (D_i/L)^{2/3}\right]$ is applied for turbulent flow, or the Hausen thermal entrance model for laminar flow ($Re_p < 2300$):
+                </p>
+                $$Nu_p = \begin{cases} 
+                3.66 + \dfrac{0.0668 \, (D_i/L) \, Re_p \, Pr}{1 + 0.04 \, [(D_i/L) \, Re_p \, Pr]^{2/3}} & Re_p < 2300 \quad \text{(Laminar Entrance)} \\[10pt]
+                Nu_{p,\text{Gnielinski}} \cdot \left[ 1 + \left(\dfrac{D_i}{L}\right)^{2/3} \right] & Re_p \ge 2300 \quad \text{(Turbulent Entrance)}
+                \end{cases}$$
+                $$Nu_{p,\text{Gnielinski}} = \frac{(f/8)(Re_p - 1000)Pr}{1 + 12.7\sqrt{f/8}(Pr^{2/3} - 1)}, \quad f = (0.79 \ln Re_p - 1.64)^{-2}$$
+                $$h_p = \frac{Nu_p \, k_{\text{air}}}{D_i}$$
               </div>
 
               <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
@@ -861,22 +885,45 @@
     // -------------------------------------------------------------------------
     // 2. HEAT & MASS TRANSFER CORRELATIONS
     // -------------------------------------------------------------------------
-    function internalConvectionCoeff(mDotTube, Di, L = 0.8, rhoP = 1.12) {
+    function internalConvectionCoeff(mDotTube, Di, L = 1.0, rhoP = 1.12, nuModel = 'finite') {
       const mu = 1.85e-5;
       const kAir = 0.0263;
       const Pr = 0.71;
       const Across = Math.PI * Di * Di * 0.25;
       const Vp = mDotTube / (rhoP * Across);
       const Re = (mDotTube * Di) / (Across * mu);
-      let Nu = 3.66;
+
+      let Nu_base = 3.66;
       let f = 64.0 / Math.max(Re, 1.0);
+
       if (Re >= 2300) {
         f = Math.pow(0.79 * Math.log(Re) - 1.64, -2);
-        Nu = ((f / 8.0) * (Re - 1000.0) * Pr) / (1.0 + 12.7 * Math.sqrt(f / 8.0) * (Math.pow(Pr, 2.0 / 3.0) - 1.0));
+        Nu_base = ((f / 8.0) * (Re - 1000.0) * Pr) / (1.0 + 12.7 * Math.sqrt(f / 8.0) * (Math.pow(Pr, 2.0 / 3.0) - 1.0));
       }
+
+      let Nu_p = Nu_base;
+      let entranceFactor = 1.0;
+
+      if (nuModel === 'finite') {
+        const Di_L = Di / L;
+        if (Re < 2300) {
+          // Hausen correlation for laminar thermal entrance
+          const num = 0.0668 * Di_L * Re * Pr;
+          const den = 1.0 + 0.04 * Math.pow(Di_L * Re * Pr, 2.0 / 3.0);
+          Nu_p = 3.66 + num / den;
+          entranceFactor = Nu_p / 3.66;
+        } else {
+          // Gnielinski entrance factor for turbulent/transitional flow
+          entranceFactor = 1.0 + Math.pow(Di_L, 2.0 / 3.0);
+          Nu_p = Nu_base * entranceFactor;
+        }
+      }
+
+      const hp = (Nu_p * kAir) / Di;
       // Darcy-Weisbach friction + entrance/exit header minor loss (K_in + K_out = 1.5)
       const dP_p = (f * (L / Di) + 1.5) * 0.5 * rhoP * Vp * Vp;
-      return { hp: (Nu * kAir) / Di, Re_p: Re, dP_p, Vp };
+
+      return { hp, Nu_p, Nu_base, entranceFactor, Re_p: Re, dP_p, Vp };
     }
 
     function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865, N_rows = 8, delta_w = 0.00014) {
@@ -963,6 +1010,7 @@
     // 3. STATE & SOLVER EXECUTION (PURE IEC CROSS-FLOW)
     // -------------------------------------------------------------------------
     let appState = {
+      internalNuMode: 'finite',
       arrangement: 'staggered',
       secAirDir: 'top_down',
       filmMode: 'nusselt',
@@ -980,32 +1028,32 @@
         return Number.isFinite(val) ? val : fallback;
       };
 
-      const Tp_in = getNum('Tp_in', 42.0);
-      const RHp_in = Math.min(100, Math.max(0.1, getNum('RHp_in', 22.0))) / 100.0;
-      const Vp_cmh = Math.max(1, getNum('Vp_cmh', 1800));
+      const Tp_in = getNum('Tp_in', 38.0);
+      const RHp_in = Math.min(100, Math.max(0.1, getNum('RHp_in', 38.0))) / 100.0;
+      const Vp_cmh = Math.max(1, getNum('Vp_cmh', 1000));
       const Vp_dot = Vp_cmh / 3600.0;
 
       const regenEl = document.getElementById('regen_mode');
       const regen = regenEl ? regenEl.checked : false;
-      const Ts_in = getNum('Ts_in', 42.0);
-      const RHs_in = Math.min(100, Math.max(0.1, getNum('RHs_in', 22.0))) / 100.0;
-      const Vs_cmh = Math.max(1, getNum('Vs_cmh', 2160));
+      const Ts_in = getNum('Ts_in', 38.0);
+      const RHs_in = Math.min(100, Math.max(0.1, getNum('RHs_in', 38.0))) / 100.0;
+      const Vs_cmh = Math.max(1, getNum('Vs_cmh', 1000));
       const Vs_dot = Vs_cmh / 3600.0;
 
       const Le = Math.max(0.1, getNum('Le_num', 0.865));
       const Vw_lpm = Math.max(0.05, getNum('Vw_lpm', 6.0));
       const h_film_const = Math.max(50, getNum('h_film_const', 3000));
       const Tw_const = getNum('Tw_const', 20.0);
-      const Do = Math.max(3, getNum('D_o', 12)) / 1000.0;
-      let Di = Math.max(2, getNum('D_i', 11)) / 1000.0;
+      const Do = Math.max(3, getNum('D_o', 25.0)) / 1000.0;
+      let Di = Math.max(2, getNum('D_i', 21.9)) / 1000.0;
       if (Di >= Do) Di = Do * 0.9;
 
-      const L = Math.max(0.1, getNum('L', 0.8));
-      const N_rows = Math.min(30, Math.max(2, Math.round(getNum('N_rows', 8))));
-      const N_cols = Math.min(30, Math.max(2, Math.round(getNum('N_cols', 10))));
+      const L = Math.max(0.1, getNum('L', 1.00));
+      const N_rows = Math.min(30, Math.max(2, Math.round(getNum('N_rows', 12))));
+      const N_cols = Math.min(30, Math.max(2, Math.round(getNum('N_cols', 16))));
 
-      let ST = Math.max(Do * 1000 + 1.5, getNum('S_T', 24)) / 1000.0;
-      let SL = Math.max(Do * 1000 + 1.5, getNum('S_L', 20)) / 1000.0;
+      let ST = Math.max(Do * 1000 + 1.5, getNum('S_T', 36.0)) / 1000.0;
+      let SL = Math.max(Do * 1000 + 1.5, getNum('S_L', 36.0)) / 1000.0;
       const k_wall = Math.max(0.05, getNum('k_wall', 0.2));
 
       const nusseltFilm = nusseltWaterFilmCoeffs(Vw_lpm, L, N_cols);
@@ -1016,6 +1064,7 @@
       return {
         Tp_in, RHp_in, Vp_cmh, Vp_dot,
         regen, Ts_in, RHs_in, Vs_cmh, Vs_dot, Le, Vw_lpm,
+        internalNuMode: appState.internalNuMode,
         filmMode: appState.filmMode,
         h_film_const,
         film,
@@ -1029,7 +1078,7 @@
     }
 
     function solveCrossFlowIEC(params, Ts_in_eff, ws_in_eff) {
-      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, secAirDir, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement, Nx } = params;
+      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, secAirDir, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement, Nx, internalNuMode } = params;
       const Ny = N_rows;
       const N_total = N_rows * N_cols;
       const isBottomUp = secAirDir === 'bottom_up';
@@ -1046,7 +1095,7 @@
       const A_face_s = (N_cols * ST) * L;
       const V_face_s = Vs_dot / A_face_s;
 
-      const { hp, Re_p, dP_p, Vp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in);
+      const { hp, Nu_p, Nu_base, entranceFactor, Re_p, dP_p, Vp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in, internalNuMode);
       const { hs, hm, Re_s, dP_s, Vmax_s } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le, N_rows, film.delta_w);
       const h_film = film.h_film;
 
@@ -1246,13 +1295,12 @@
         Tp_out, wp_in, mp_total, cp_p,
         Ts_out, ws_out,
         Tp_grid, Tw_grid, ws_grid,
+        hp, Nu_p, Nu_base, entranceFactor,
         Re_p, Re_s, dP_p, dP_s, Vp, Vmax_s, Nx, Ny
       };
     }
 
     // -------------------------------------------------------------------------
-    // LUMPED WHOLE-BUNDLE LMTD / LMED SOLVER WITH CROSS-FLOW CORRECTION F
-// -------------------------------------------------------------------------
     // LUMPED WHOLE-BUNDLE LMTD / LMED SOLVER WITH CROSS-FLOW CORRECTION F
     // -------------------------------------------------------------------------
     function computeCrossFlowCorrectionF(P, R) {
@@ -1288,7 +1336,7 @@
     }
 
     function solveLumpedWholeBundleLMTD(params, Ts_in_eff, ws_in_eff) {
-      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement } = params;
+      const { Tp_in, RHp_in, Vp_dot, Vs_dot, Le, film, twMode, Tw_const, Do, Di, L, N_rows, N_cols, ST, SL, k_wall, arrangement, internalNuMode } = params;
       const N_total = N_rows * N_cols;
 
       const wp_in = humidityRatioFromRH(Tp_in, RHp_in);
@@ -1303,7 +1351,7 @@
       const A_face_s = (N_cols * ST) * L;
       const V_face_s = Vs_dot / A_face_s;
 
-      const { hp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in);
+      const { hp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in, internalNuMode);
       const { hs, hm } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le, N_rows, film.delta_w);
       const h_film = film.h_film;
 
@@ -1510,6 +1558,7 @@
         s_in: { Tdb: Ts_eff, RH: RHs_in_eff * 100, Twb: Twb_s_in, w: ws_eff * 1000 },
         s_out: { Tdb: iecRes.Ts_out, RH: RHs_out * 100, w: iecRes.ws_out * 1000 },
         Q_kw, wb_eff, dp_eff, meanTw,
+        hp: iecRes.hp, Nu_p: iecRes.Nu_p, Nu_base: iecRes.Nu_base, entranceFactor: iecRes.entranceFactor,
         Re_p: iecRes.Re_p, Re_s: iecRes.Re_s,
         dP_p: iecRes.dP_p, dP_s: iecRes.dP_s,
         Vp: iecRes.Vp, Vmax_s: iecRes.Vmax_s,
@@ -1557,6 +1606,11 @@
       document.getElementById('kpi_in_rh').textContent = `${res.p_in.RH.toFixed(1)}%`;
       document.getElementById('kpi_in_twb').textContent = `${res.p_in.Twb.toFixed(1)}°C`;
       document.getElementById('kpi_in_w').textContent = `${res.p_in.w.toFixed(1)} g/kg`;
+
+      // Internal Convection Readout Badge in Card 1
+      document.getElementById('val_nu_p').textContent = res.Nu_p.toFixed(1);
+      document.getElementById('val_nu_factor').textContent = `${res.entranceFactor.toFixed(3)}×`;
+      document.getElementById('val_hp').textContent = `${res.hp.toFixed(1)} W/m²K`;
 
       // Primary Outlet
       const dT = res.p_out.Tdb - res.p_in.Tdb;
@@ -2185,7 +2239,7 @@
       ctx.strokeRect(pad.left, pad.top, plotW, plotH);
 
       // X-axis ticks & label (Primary tube length 0 -> L)
-      const L_m = appState.lastParams ? appState.lastParams.L : 0.8;
+      const L_m = appState.lastParams ? appState.lastParams.L : 1.0;
       ctx.fillStyle = '#475569';
       ctx.font = '10.5px JetBrains Mono, monospace';
       ctx.textAlign = 'center';
@@ -2233,6 +2287,28 @@
       if (appState.lastResults) {
         drawContourHeatmap(appState.lastResults);
       }
+    }
+
+    function setInternalNuMode(mode) {
+      appState.internalNuMode = mode;
+      const btnStd = document.getElementById('btn_nu_standard');
+      const btnFin = document.getElementById('btn_nu_finite');
+      const badge = document.getElementById('internal_nu_badge');
+      const activeCls = 'py-1.5 px-1.5 rounded-md font-semibold bg-white text-slate-900 shadow-sm transition';
+      const inactiveCls = 'py-1.5 px-1.5 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition';
+
+      if (mode === 'finite') {
+        btnFin.className = activeCls;
+        btnStd.className = inactiveCls;
+        badge.textContent = 'Gnielinski + Entrance';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 font-semibold';
+      } else {
+        btnStd.className = activeCls;
+        btnFin.className = inactiveCls;
+        badge.textContent = 'Standard Gnielinski';
+        badge.className = 'text-[10px] font-mono-num px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold';
+      }
+      runSimulation();
     }
 
     function setArrangement(arr) {
