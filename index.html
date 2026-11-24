@@ -394,7 +394,7 @@
     <main class="lg:col-span-8 xl:col-span-9 space-y-5">
 
       <!-- STAGE-BY-STAGE STATE CARDS + PERFORMANCE KPIS -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3.5">
         <!-- Card 1: Primary Air Inlet -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div class="absolute top-0 left-0 w-1 h-full bg-rose-500"></div>
@@ -443,8 +443,35 @@
           </div>
         </div>
 
-        <!-- Card 4: IEC Thermal Effectiveness & Capacity -->
-        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-sm flex flex-col justify-between">
+        <!-- Card 4: Air-Side Pressure Drops & Separate Ideal Fan Powers -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-bold uppercase text-slate-400">Air Pressure Drop &amp; Power</span>
+              <span class="text-[11px] font-mono-num bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-semibold">Ideal Fan</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200/80">
+                <span class="text-[10px] font-semibold uppercase text-rose-600 block">Primary (Tube)</span>
+                <span id="kpi_dp_p" class="font-mono-num text-sm font-bold text-slate-900 block">48.2 Pa</span>
+                <span id="kpi_pfan_p" class="font-mono-num text-[11px] font-semibold text-slate-600">24.1 W</span>
+              </div>
+              <div class="bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200/80">
+                <span class="text-[10px] font-semibold uppercase text-cyan-700 block">Secondary (Cross)</span>
+                <span id="kpi_dp_s" class="font-mono-num text-sm font-bold text-amber-700 block">34.6 Pa</span>
+                <span id="kpi_pfan_s" class="font-mono-num text-[11px] font-semibold text-slate-600">20.8 W</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 pt-1.5 border-t border-slate-100 grid grid-cols-2 gap-1 text-[11px] font-mono-num text-slate-600">
+            <div><span class="text-slate-400">V_tube: </span><span id="kpi_vp_vel" class="font-semibold">5.26 m/s</span></div>
+            <div><span class="text-slate-400">V_max,s: </span><span id="kpi_vs_vmax" class="font-semibold">3.13 m/s</span></div>
+          </div>
+        </div>
+
+        <!-- Card 5: IEC Thermal Effectiveness & Capacity -->
+        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-sm flex flex-col justify-between sm:col-span-2 xl:col-span-1">
           <div>
             <span class="text-xs font-bold uppercase text-slate-400 block">Sensible Cooling Capacity</span>
             <div class="flex items-baseline gap-2 mt-0.5">
@@ -721,6 +748,30 @@
           </div>
         </section>
 
+        <!-- Section 6 -->
+        <section class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-slate-800 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">6</span>
+            Separate Air-Side Pressure Drops ($\Delta P_p, \Delta P_s$) &amp; Fan Powers ($P_{\text{fan},p}, P_{\text{fan},s}$)
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-900 mb-1">Primary Air (Tube-Side Darcy–Weisbach + Header Losses)</div>
+              <p class="text-slate-600 mb-1">
+                Includes frictional pressure drop along smooth tube length $L$ plus sharp-edged header contraction/expansion minor losses ($K_{\text{in}} + K_{\text{out}} \approx 1.5$):
+              </p>
+              $$\Delta P_p = \left( f \frac{L}{D_i} + K_{\text{in}} + K_{\text{out}} \right) \frac{\rho_p V_p^2}{2}, \quad P_{\text{fan},p} = \dot{V}_p \Delta P_p$$
+            </div>
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <div class="font-bold text-slate-900 mb-1">Secondary Air (Zukauskas Wetted Tube-Bank Cross-Flow)</div>
+              <p class="text-slate-600 mb-1">
+                Evaluated across $N_{\text{rows}}$ using maximum interstitial velocity $V_{\max,s}$ (accounting for liquid film thickness $\delta_w$ on $D_{o,\text{wet}} = D_o + 2\delta_w$) with Zukauskas friction factor $f_z$ and geometry correction $\chi$:
+              </p>
+              $$\Delta P_s = N_{\text{rows}} \, \chi \, f_z \, \frac{\rho_s V_{\max,s}^2}{2}, \quad P_{\text{fan},s} = \dot{V}_s \Delta P_s$$
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -810,31 +861,38 @@
     // -------------------------------------------------------------------------
     // 2. HEAT & MASS TRANSFER CORRELATIONS
     // -------------------------------------------------------------------------
-    function internalConvectionCoeff(mDotTube, Di) {
+    function internalConvectionCoeff(mDotTube, Di, L = 0.8, rhoP = 1.12) {
       const mu = 1.85e-5;
       const kAir = 0.0263;
       const Pr = 0.71;
       const Across = Math.PI * Di * Di * 0.25;
+      const Vp = mDotTube / (rhoP * Across);
       const Re = (mDotTube * Di) / (Across * mu);
       let Nu = 3.66;
+      let f = 64.0 / Math.max(Re, 1.0);
       if (Re >= 2300) {
-        const f = Math.pow(0.79 * Math.log(Re) - 1.64, -2);
+        f = Math.pow(0.79 * Math.log(Re) - 1.64, -2);
         Nu = ((f / 8.0) * (Re - 1000.0) * Pr) / (1.0 + 12.7 * Math.sqrt(f / 8.0) * (Math.pow(Pr, 2.0 / 3.0) - 1.0));
       }
-      return { hp: (Nu * kAir) / Di, Re_p: Re };
+      // Darcy-Weisbach friction + entrance/exit header minor loss (K_in + K_out = 1.5)
+      const dP_p = (f * (L / Di) + 1.5) * 0.5 * rhoP * Vp * Vp;
+      return { hp: (Nu * kAir) / Di, Re_p: Re, dP_p, Vp };
     }
 
-    function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865) {
+    function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865, N_rows = 8, delta_w = 0.00014) {
       const rho = moistAirDensity(Tmean, wmean);
       const mu = 1.85e-5;
       const kAir = 0.0263;
       const Pr = 0.71;
 
-      let Vmax = VfaceS * (ST / Math.max(ST - Do, 0.0005));
+      // Account for falling liquid film thickness on effective outer diameter for cross-flow pressure drop
+      const Do_wet = Do + 2.0 * delta_w;
+
+      let Vmax = VfaceS * (ST / Math.max(ST - Do_wet, 0.0005));
       if (arrangement === 'staggered') {
         const SD = Math.sqrt(SL * SL + Math.pow(ST / 2.0, 2));
-        const ratio1 = ST / Math.max(ST - Do, 0.0005);
-        const ratio2 = ST / Math.max(2.0 * (SD - Do), 0.0005);
+        const ratio1 = ST / Math.max(ST - Do_wet, 0.0005);
+        const ratio2 = ST / Math.max(2.0 * (SD - Do_wet), 0.0005);
         Vmax = VfaceS * Math.max(ratio1, ratio2);
       }
 
@@ -860,7 +918,25 @@
       const cpMoist = CP_DA + wmean * CP_V;
       const hm = hs / (cpMoist * Math.pow(Le, 2.0 / 3.0));
 
-      return { hs, hm, Re_s: ReMax };
+      // Zukauskas cross-flow tube bank friction factor f_z & pitch correction chi
+      const Re_wet = Math.max(20.0, (rho * Vmax * Do_wet) / mu);
+      const PT = ST / Do_wet;
+      const PL = SL / Do_wet;
+      let f_z, chi;
+      if (arrangement === 'staggered') {
+        f_z = Re_wet < 1000
+          ? (32.0 / Math.pow(Re_wet, 0.72)) * Math.pow(PT / Math.max(1.05, PT - 1.0), 0.4)
+          : 2.2 * Math.pow(Re_wet, -0.22);
+        chi = Math.max(0.75, Math.min(1.45, Math.pow(PT / Math.max(1.05, PL), -0.18)));
+      } else {
+        f_z = Re_wet < 1000
+          ? (28.0 / Math.pow(Re_wet, 0.72))
+          : 1.85 * Math.pow(Re_wet, -0.20);
+        chi = Math.max(0.75, Math.min(1.45, Math.pow((PT - 1.0) / Math.max(0.15, PL - 1.0), -0.15)));
+      }
+      const dP_s = N_rows * chi * f_z * 0.5 * rho * Vmax * Vmax;
+
+      return { hs, hm, Re_s: ReMax, dP_s, Vmax_s: Vmax };
     }
 
     function nusseltWaterFilmCoeffs(Vw_lpm, L, N_cols) {
@@ -948,7 +1024,7 @@
         Tw_const,
         Do, Di, L, N_rows, N_cols, ST, SL, k_wall,
         arrangement: appState.arrangement,
-        Nx: 100
+        Nx: 30
       };
     }
 
@@ -970,8 +1046,8 @@
       const A_face_s = (N_cols * ST) * L;
       const V_face_s = Vs_dot / A_face_s;
 
-      const { hp, Re_p } = internalConvectionCoeff(mp_per_tube, Di);
-      const { hs, hm, Re_s } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le);
+      const { hp, Re_p, dP_p, Vp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in);
+      const { hs, hm, Re_s, dP_s, Vmax_s } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le, N_rows, film.delta_w);
       const h_film = film.h_film;
 
       const dx = L / Nx;
@@ -1170,11 +1246,13 @@
         Tp_out, wp_in, mp_total, cp_p,
         Ts_out, ws_out,
         Tp_grid, Tw_grid, ws_grid,
-        Re_p, Re_s, Nx, Ny
+        Re_p, Re_s, dP_p, dP_s, Vp, Vmax_s, Nx, Ny
       };
     }
 
     // -------------------------------------------------------------------------
+    // LUMPED WHOLE-BUNDLE LMTD / LMED SOLVER WITH CROSS-FLOW CORRECTION F
+// -------------------------------------------------------------------------
     // LUMPED WHOLE-BUNDLE LMTD / LMED SOLVER WITH CROSS-FLOW CORRECTION F
     // -------------------------------------------------------------------------
     function computeCrossFlowCorrectionF(P, R) {
@@ -1225,8 +1303,8 @@
       const A_face_s = (N_cols * ST) * L;
       const V_face_s = Vs_dot / A_face_s;
 
-      const { hp } = internalConvectionCoeff(mp_per_tube, Di);
-      const { hs, hm } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le);
+      const { hp } = internalConvectionCoeff(mp_per_tube, Di, L, rhop_in);
+      const { hs, hm } = externalTubeBankCoeffs(V_face_s, Do, ST, SL, arrangement, Ts_in_eff, ws_in_eff, Le, N_rows, film.delta_w);
       const h_film = film.h_film;
 
       // Whole-bundle total surface areas & conductance UA_tot
@@ -1423,6 +1501,8 @@
         }
       }
       const meanTw = sumTw / countTw;
+      const P_fan_p_W = params.Vp_dot * iecRes.dP_p;
+      const P_fan_s_W = params.Vs_dot * iecRes.dP_s;
 
       const results = {
         p_in: { Tdb: params.Tp_in, RH: params.RHp_in * 100, Twb: Twb_p_in, w: wp_in * 1000 },
@@ -1431,6 +1511,9 @@
         s_out: { Tdb: iecRes.Ts_out, RH: RHs_out * 100, w: iecRes.ws_out * 1000 },
         Q_kw, wb_eff, dp_eff, meanTw,
         Re_p: iecRes.Re_p, Re_s: iecRes.Re_s,
+        dP_p: iecRes.dP_p, dP_s: iecRes.dP_s,
+        Vp: iecRes.Vp, Vmax_s: iecRes.Vmax_s,
+        P_fan_p_W, P_fan_s_W,
         Tp_grid: iecRes.Tp_grid,
         Tw_grid: iecRes.Tw_grid,
         ws_grid: iecRes.ws_grid,
@@ -1489,6 +1572,13 @@
       document.getElementById('kpi_sec_rh').textContent = `${res.s_out.RH.toFixed(1)}%`;
       document.getElementById('kpi_sec_dw').textContent = `${dWs >= 0 ? '+' : ''}${dWs.toFixed(1)} g/kg`;
       document.getElementById('kpi_sec_w').textContent = `${res.s_out.w.toFixed(1)} g/kg`;
+      // Air-Side Pressure Drops & Separate Ideal Fan Powers
+      document.getElementById('kpi_dp_p').textContent = `${res.dP_p.toFixed(1)} Pa`;
+      document.getElementById('kpi_pfan_p').textContent = `${res.P_fan_p_W.toFixed(1)} W`;
+      document.getElementById('kpi_dp_s').textContent = `${res.dP_s.toFixed(1)} Pa`;
+      document.getElementById('kpi_pfan_s').textContent = `${res.P_fan_s_W.toFixed(1)} W`;
+      document.getElementById('kpi_vp_vel').textContent = `${res.Vp.toFixed(2)} m/s`;
+      document.getElementById('kpi_vs_vmax').textContent = `${res.Vmax_s.toFixed(2)} m/s`;
 
       // Performance
       document.getElementById('kpi_q_kw').textContent = `${res.Q_kw.toFixed(2)} kW`;
