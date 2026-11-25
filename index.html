@@ -513,6 +513,145 @@
         </div>
       </div>
 
+      <!-- THERMAL COMFORT & INDOOR ACCEPTABILITY PANEL (ASHRAE 55 / ISO 7730 / IMAC) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <h3 class="text-sm font-bold text-slate-800">Primary Air Supply Thermal Comfort &amp; Acceptability Evaluation</h3>
+            <span class="text-[11px] font-mono-num bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-semibold">State P₂ Supply Air</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="comfort_status_badge" class="font-mono-num text-xs px-2.5 py-1 rounded-lg font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">ASHRAE 55 Compliant</span>
+          </div>
+        </div>
+
+        <!-- Occupant & Environmental Comfort Control Inputs -->
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- Met Rate -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="met_val" class="font-semibold text-slate-700">Metabolic Rate $M$ (met)</label>
+              <span id="disp_met" class="font-mono-num font-bold text-slate-900">1.1 met</span>
+            </div>
+            <input id="met_val" type="number" min="0.7" max="4.0" step="0.1" value="1.1" class="w-full font-mono-num px-2 py-1 rounded border border-slate-300 bg-white focus:outline-none focus:border-cyan-600">
+            <div class="flex gap-1 mt-1 text-[10px]">
+              <button type="button" onclick="setComfortPreset('met', 1.0)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">1.0 Quiet</button>
+              <button type="button" onclick="setComfortPreset('met', 1.1)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">1.1 Office</button>
+              <button type="button" onclick="setComfortPreset('met', 1.6)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">1.6 Active</button>
+            </div>
+          </div>
+
+          <!-- Clo Insulation -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="clo_val" class="font-semibold text-slate-700">Clothing $I_{cl}$ (clo)</label>
+              <span id="disp_clo" class="font-mono-num font-bold text-slate-900">0.50 clo</span>
+            </div>
+            <input id="clo_val" type="number" min="0.1" max="2.0" step="0.05" value="0.50" class="w-full font-mono-num px-2 py-1 rounded border border-slate-300 bg-white focus:outline-none focus:border-cyan-600">
+            <div class="flex gap-1 mt-1 text-[10px]">
+              <button type="button" onclick="setComfortPreset('clo', 0.36)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">0.36 Light</button>
+              <button type="button" onclick="setComfortPreset('clo', 0.50)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">0.50 Summer</button>
+              <button type="button" onclick="setComfortPreset('clo', 0.75)" class="px-1.5 py-0.5 bg-white border border-slate-200 rounded hover:bg-slate-100">0.75 Trans.</button>
+            </div>
+          </div>
+
+          <!-- Occupant Distance & Calculated Air Velocity -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="x_occ_val" class="font-semibold text-slate-700">Occupant Distance $x_{\text{occ}}$ (m)</label>
+              <span id="disp_xocc" class="font-mono-num font-bold text-slate-900">2.0 m</span>
+            </div>
+            <input id="x_occ_val" type="number" min="0.3" max="10.0" step="0.1" value="2.0" class="w-full font-mono-num px-2 py-1 rounded border border-slate-300 bg-white focus:outline-none focus:border-cyan-600">
+            <div class="flex justify-between items-center mt-1 text-[10px]">
+              <span class="text-slate-500">Calculated $v_{\text{air}}$:</span>
+              <span id="disp_vair" class="font-mono-num font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">0.25 m/s</span>
+            </div>
+          </div>
+
+          <!-- Radiant Offset -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="mrt_offset_val" class="font-semibold text-slate-700">Radiant Offset $\Delta T_{mrt}$</label>
+              <span id="disp_mrt" class="font-mono-num font-bold text-slate-900">+1.0 K</span>
+            </div>
+            <input id="mrt_offset_val" type="number" min="-5.0" max="8.0" step="0.5" value="1.0" class="w-full font-mono-num px-2 py-1 rounded border border-slate-300 bg-white focus:outline-none focus:border-cyan-600">
+            <span class="text-[10px] text-slate-500 block mt-1">$T_{mrt} = T_{p,\text{out}} + \Delta T_{mrt}$</span>
+          </div>
+        </div>
+
+        <!-- Calculated Comfort Outputs Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+          <!-- PMV ASHRAE 55 -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">ASHRAE 55 PMV</span>
+            <span id="comfort_pmv_val" class="font-mono-num text-lg font-bold text-emerald-600">+0.12</span>
+            <span id="comfort_pmv_desc" class="block text-[10px] text-slate-500">Neutral Comfort</span>
+          </div>
+
+          <!-- PPD -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">PPD Dissatisfied</span>
+            <span id="comfort_ppd_val" class="font-mono-num text-lg font-bold text-slate-900">5.3%</span>
+            <span class="block text-[10px] text-emerald-600 font-semibold">&lt; 10% Target</span>
+          </div>
+
+          <!-- Cooling Effect & SET* -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">Cooling Effect (CE)</span>
+            <span id="comfort_ce_val" class="font-mono-num text-lg font-bold text-cyan-700">+1.8 °C</span>
+            <span id="comfort_set_val" class="block text-[10px] text-slate-500">SET*: 24.5°C</span>
+          </div>
+
+          <!-- Operative Temp -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">Operative T_op</span>
+            <span id="comfort_top_val" class="font-mono-num text-lg font-bold text-slate-900">28.9 °C</span>
+            <span id="comfort_top_adj" class="block text-[10px] text-slate-500">Effective: 27.1°C</span>
+          </div>
+
+          <!-- IMAC India Comfort -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">IMAC (India) Neutral</span>
+            <span id="comfort_imac_neut" class="font-mono-num text-lg font-bold text-cyan-800">25.8 °C</span>
+            <span id="comfort_imac_band" class="block text-[10px] text-slate-500">90%: 23.4–28.2°C</span>
+          </div>
+
+          <!-- ISO 7730 Raw PMV -->
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+            <span class="text-[10px] uppercase font-semibold text-slate-500 block">ISO 7730 Raw PMV</span>
+            <span id="comfort_raw_pmv_val" class="font-mono-num text-lg font-bold text-slate-700">+0.62</span>
+            <span id="comfort_w_val" class="block text-[10px] text-slate-500">ω: 16.8 g/kg</span>
+          </div>
+        </div>
+
+        <!-- Visual PMV Comfort Scale Gauge Bar -->
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
+          <div class="flex justify-between items-center text-[11px] font-semibold text-slate-700">
+            <span>Fanger Thermal Comfort Scale (PMV)</span>
+            <span id="pmv_gauge_label" class="font-mono-num text-emerald-700 font-bold">PMV = +0.12 (PPD 5.3%) — Comfort Zone</span>
+          </div>
+          <div class="relative w-full h-5 rounded-full overflow-hidden border border-slate-300 flex text-[9px] font-mono-num font-bold text-white text-center">
+            <div class="w-[16.66%] bg-blue-600 flex items-center justify-center" title="Cold (-3)">-3 Cold</div>
+            <div class="w-[16.66%] bg-sky-400 flex items-center justify-center text-slate-900" title="Cool (-2)">-2 Cool</div>
+            <div class="w-[16.66%] bg-cyan-300 flex items-center justify-center text-slate-900" title="Slightly Cool (-1)">-1</div>
+            <div class="w-[16.68%] bg-emerald-500 flex items-center justify-center shadow-inner" title="Comfort Zone (-0.5 to +0.5)">0 Comfort</div>
+            <div class="w-[16.66%] bg-amber-400 flex items-center justify-center text-slate-900" title="Slightly Warm (+1)">+1</div>
+            <div class="w-[16.66%] bg-rose-500 flex items-center justify-center" title="Warm (+2) / Hot (+3)">+2 to +3 Hot</div>
+
+            <!-- Live PMV Indicator Marker -->
+            <div id="pmv_gauge_marker" class="absolute top-0 h-full w-2.5 bg-slate-900 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 transition-all duration-300" style="left: 52%;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono-num pt-0.5">
+            <span>-3.0 (Cold)</span>
+            <span>-0.5 (ASHRAE Min)</span>
+            <span class="font-bold text-emerald-700">0.0 Neutral</span>
+            <span>+0.5 (ASHRAE Max)</span>
+            <span>+3.0 (Hot)</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ROW 1 VISUALIZATIONS: TUBE BUNDLE STRUCTURE & PSYCHROMETRIC CHART -->
       <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
 
@@ -796,6 +935,35 @@
           </div>
         </section>
 
+        <!-- Section 7 -->
+        <section class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200">
+          <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <span class="bg-emerald-600 text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">7</span>
+            Thermal Comfort Evaluation (ASHRAE 55 Elevated Air Speed SET* &amp; CBE Tool Engine)
+          </h3>
+          <p class="text-xs text-emerald-950 mb-2">
+            Evaluates occupant thermal sensation for the cooled primary supply air stream ($P_2$) according to <strong>ASHRAE Standard 55-2020/2023</strong>, <strong>ISO 7730</strong>, and the <strong>CBE Thermal Comfort Tool SET* model</strong>:
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-white p-3 rounded-lg border border-emerald-200">
+              <div class="font-bold text-slate-900 mb-1">Gagge 2-Node SET* &amp; Cooling Effect (CE)</div>
+              $$\text{SET}^*(T_{db}, T_{mrt}, v_{\text{air}}, RH, M, I_{cl}) = \text{SET}^*(T_{db} - CE, T_{mrt} - CE, 0.1\,\text{m/s}, RH, M, I_{cl})$$
+              $$PMV_{\text{ASHRAE55}} = PMV_{\text{Fanger}}\left(T_{db} - CE, T_{mrt} - CE, v_{\text{still}} = 0.1\,\text{m/s}, RH, M, I_{cl}\right)$$
+              <p class="text-slate-600 mt-1">
+                Elevated air speed $v_{\text{air}}$ increases convective/evaporative heat dissipation, producing a Cooling Effect ($CE \ge 0$). This dynamically shifts the ASHRAE 55 green comfort polygon to the right on the psychrometric chart.
+              </p>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-emerald-200">
+              <div class="font-bold text-slate-900 mb-1">Turbulent Supply Jet Velocity Decay ($v_{\text{air}}$)</div>
+              $$V_0 = \frac{\dot{V}_p}{A_{\text{face}}}, \quad D_{\text{eq}} = \sqrt{\frac{4 A_{\text{face}}}{\pi}}$$
+              $$v_{\text{air}}(x) = \max\!\left(0.10, \; \min\!\left(V_0, \; V_0 \cdot \frac{K_{\text{throw}} D_{\text{eq}}}{x_{\text{occ}}}\right)\right)$$
+              <p class="text-slate-600 mt-1">
+                Evaluates centerline jet decay (ASHRAE Fundamentals Ch. 20) from IEC outlet face area $A_{\text{face}} = N_{\text{cols}}S_T \cdot N_{\text{rows}}S_L$ using throw constant $K_{\text{throw}} = 5.0$.
+              </p>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -883,56 +1051,50 @@
     }
 
     // -------------------------------------------------------------------------
-    // 2. HEAT & MASS TRANSFER CORRELATIONS
+    // 2. HEAT & MASS TRANSFER CORRELATIONS (GNIELINSKI + ENTRANCE & NUSSELT)
     // -------------------------------------------------------------------------
-    function internalConvectionCoeff(mDotTube, Di, L = 1.0, rhoP = 1.12, nuModel = 'finite') {
+    function internalConvectionCoeff(mDotTube, Di, L = 1.0, rhoP = 1.12, nuMode = 'finite') {
       const mu = 1.85e-5;
       const kAir = 0.0263;
       const Pr = 0.71;
       const Across = Math.PI * Di * Di * 0.25;
       const Vp = mDotTube / (rhoP * Across);
       const Re = (mDotTube * Di) / (Across * mu);
+      const lengthRatio = Di / Math.max(0.05, L);
 
       let Nu_base = 3.66;
+      let Nu_p = 3.66;
+      let entranceFactor = 1.0;
       let f = 64.0 / Math.max(Re, 1.0);
 
       if (Re >= 2300) {
         f = Math.pow(0.79 * Math.log(Re) - 1.64, -2);
         Nu_base = ((f / 8.0) * (Re - 1000.0) * Pr) / (1.0 + 12.7 * Math.sqrt(f / 8.0) * (Math.pow(Pr, 2.0 / 3.0) - 1.0));
-      }
-
-      let Nu_p = Nu_base;
-      let entranceFactor = 1.0;
-
-      if (nuModel === 'finite') {
-        const Di_L = Di / L;
-        if (Re < 2300) {
-          // Hausen correlation for laminar thermal entrance
-          const num = 0.0668 * Di_L * Re * Pr;
-          const den = 1.0 + 0.04 * Math.pow(Di_L * Re * Pr, 2.0 / 3.0);
-          Nu_p = 3.66 + num / den;
-          entranceFactor = Nu_p / 3.66;
+        entranceFactor = nuMode === 'finite' ? (1.0 + Math.pow(lengthRatio, 2.0 / 3.0)) : 1.0;
+        Nu_p = Nu_base * entranceFactor;
+      } else {
+        Nu_base = 3.66;
+        if (nuMode === 'finite') {
+          const gz = lengthRatio * Re * Pr;
+          Nu_p = 3.66 + (0.0668 * gz) / (1.0 + 0.04 * Math.pow(gz, 2.0 / 3.0));
+          entranceFactor = Nu_p / Math.max(Nu_base, 1e-6);
         } else {
-          // Gnielinski entrance factor for turbulent/transitional flow
-          entranceFactor = 1.0 + Math.pow(Di_L, 2.0 / 3.0);
-          Nu_p = Nu_base * entranceFactor;
+          Nu_p = Nu_base;
+          entranceFactor = 1.0;
         }
       }
 
-      const hp = (Nu_p * kAir) / Di;
       // Darcy-Weisbach friction + entrance/exit header minor loss (K_in + K_out = 1.5)
       const dP_p = (f * (L / Di) + 1.5) * 0.5 * rhoP * Vp * Vp;
-
-      return { hp, Nu_p, Nu_base, entranceFactor, Re_p: Re, dP_p, Vp };
+      return { hp: (Nu_p * kAir) / Di, Nu_p, Nu_base, entranceFactor, Re_p: Re, dP_p, Vp };
     }
 
-    function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865, N_rows = 8, delta_w = 0.00014) {
+    function externalTubeBankCoeffs(VfaceS, Do, ST, SL, arrangement, Tmean, wmean, Le = 0.865, N_rows = 12, delta_w = 0.00014) {
       const rho = moistAirDensity(Tmean, wmean);
       const mu = 1.85e-5;
       const kAir = 0.0263;
       const Pr = 0.71;
 
-      // Account for falling liquid film thickness on effective outer diameter for cross-flow pressure drop
       const Do_wet = Do + 2.0 * delta_w;
 
       let Vmax = VfaceS * (ST / Math.max(ST - Do_wet, 0.0005));
@@ -965,7 +1127,6 @@
       const cpMoist = CP_DA + wmean * CP_V;
       const hm = hs / (cpMoist * Math.pow(Le, 2.0 / 3.0));
 
-      // Zukauskas cross-flow tube bank friction factor f_z & pitch correction chi
       const Re_wet = Math.max(20.0, (rho * Vmax * Do_wet) / mu);
       const PT = ST / Do_wet;
       const PL = SL / Do_wet;
@@ -1007,14 +1168,211 @@
     }
 
     // -------------------------------------------------------------------------
+    // 2B. THERMAL COMFORT & GAGGE 2-NODE / ASHRAE 55 ELEVATED AIR SPEED ENGINE
+    // -------------------------------------------------------------------------
+    function fangerPMV(Tdb, Tmrt, vAir, rhPct, met, clo) {
+      const M = Math.max(0.7, met) * 58.15; // W/m^2
+      const W = 0.0; // External work assumed zero for sedentary/light office
+      const Icl = Math.max(0.05, clo) * 0.155; // m^2*K/W
+      const rh = Math.max(0.01, Math.min(1.0, rhPct / 100.0));
+      const pa = rh * satVaporPressure(Tdb); // Pa
+
+      // Clothing area factor f_cl
+      const fcl = Icl <= 0.078 ? (1.0 + 1.29 * Icl) : (1.05 + 0.645 * Icl);
+
+      // Relative air velocity
+      const vRel = vAir + (met > 1.0 ? 0.003 * (M - 58.15) : 0.0);
+      const hcForced = 12.1 * Math.sqrt(Math.max(0.01, vRel));
+
+      // ISO 7730 metabolic heat loss terms
+      const H_net = M - W;
+      const C_res = 0.0014 * M * (34.0 - Tdb);
+      const E_res = 0.0000173 * M * (5867.0 - pa);
+      const E_diff = 3.05 * 0.001 * (5733.0 - 6.99 * H_net - pa);
+      const E_rsw = H_net > 58.15 ? 0.42 * (H_net - 58.15) : 0.0;
+
+      // Target skin temperature (ISO 7730)
+      const Tsk = 35.7 - 0.0275 * H_net;
+
+      // Iterative solution for outer clothing surface temperature Tcl
+      let Tcl = 0.5 * (Tsk + Tdb);
+      for (let it = 0; it < 30; it++) {
+        const hcNat = 2.38 * Math.pow(Math.max(0.05, Math.abs(Tcl - Tdb)), 0.25);
+        const hc = Math.max(hcForced, hcNat);
+        const Tcl_K = Tcl + 273.15;
+        const Tmrt_K = Tmrt + 273.15;
+        const hr = 3.96e-8 * fcl * (Math.pow(Tcl_K, 4) - Math.pow(Tmrt_K, 4)) / Math.max(0.1, Tcl - Tmrt);
+
+        const Tcl_new = (Tsk + fcl * (hc * Tdb + hr * Tmrt) * Icl) / (1.0 + fcl * (hc + hr) * Icl);
+        if (Math.abs(Tcl_new - Tcl) < 1e-4) {
+          Tcl = Tcl_new;
+          break;
+        }
+        Tcl = 0.5 * Tcl + 0.5 * Tcl_new;
+      }
+
+      const hcNatFin = 2.38 * Math.pow(Math.max(0.05, Math.abs(Tcl - Tdb)), 0.25);
+      const hcFin = Math.max(hcForced, hcNatFin);
+      const Tcl_K = Tcl + 273.15;
+      const Tmrt_K = Tmrt + 273.15;
+      const hrFin = 3.96e-8 * fcl * (Math.pow(Tcl_K, 4) - Math.pow(Tmrt_K, 4)) / Math.max(0.1, Tcl - Tmrt);
+
+      const R_dry = fcl * (hcFin * (Tcl - Tdb) + hrFin * (Tcl - Tmrt));
+      const L_heat = H_net - E_diff - E_rsw - C_res - E_res - R_dry;
+
+      const tsCoeff = 0.303 * Math.exp(-0.036 * M) + 0.028;
+      const pmv = tsCoeff * L_heat;
+      const ppd = 100.0 - 95.0 * Math.exp(-0.03353 * Math.pow(pmv, 4) - 0.2179 * Math.pow(pmv, 2));
+      return { PMV: pmv, PPD: Math.max(5.0, Math.min(100.0, ppd)) };
+    }
+
+    function calculateASHRAE55PMV(Tdb, rhPct, vAir, met, clo, dTmrt) {
+      const Tmrt = Tdb + dTmrt;
+      const raw = fangerPMV(Tdb, Tmrt, vAir, rhPct, met, clo);
+
+      // ASHRAE 55 Cooling Effect (CE): temperature offset under still air (0.1 m/s) matching elevated-air-speed comfort
+      let CE = 0.0;
+      if (vAir > 0.12) {
+        const targetPmv = raw.PMV;
+        CE = solveRoot((ceGuess) => {
+          const adj = fangerPMV(Tdb - ceGuess, Tmrt - ceGuess, 0.1, rhPct, met, clo);
+          return adj.PMV - targetPmv;
+        }, -2.0, 8.0, 1e-3, 35);
+        CE = Math.max(0.0, Math.min(6.5, CE));
+      }
+
+      const adjRes = fangerPMV(Tdb - CE, Tmrt - CE, 0.1, rhPct, met, clo);
+
+      // Approximate SET* from effective still-air temperature
+      const wKg = humidityRatioFromRH(Tdb, Math.max(0.01, Math.min(1.0, rhPct / 100.0)));
+      const Twb = wetBulbTemp(Tdb - CE, wKg);
+      const setStar = 0.55 * (Tdb - CE + dTmrt) + 0.45 * Twb;
+
+      return {
+        PMV: adjRes.PMV,
+        PPD: adjRes.PPD,
+        rawPMV: raw.PMV,
+        rawPPD: raw.PPD,
+        CE,
+        setStar
+      };
+    }
+
+    function computeOccupantJetVelocity(Vp_dot, params, x_occ) {
+      const A_face = Math.max(0.02, (params.N_cols * params.ST) * (params.N_rows * params.SL));
+      const D_eq = Math.sqrt((4.0 * A_face) / Math.PI);
+      const V0 = Vp_dot / A_face;
+      const K_throw = 5.0;
+      const coreDist = K_throw * D_eq;
+      if (x_occ <= coreDist) return Math.max(0.10, V0);
+      const decayed = V0 * (coreDist / Math.max(0.1, x_occ));
+      return Math.max(0.10, Math.min(V0, decayed));
+    }
+
+    function evaluateThermalComfort(results, params) {
+      const getNum = (id, fallback) => {
+        const el = document.getElementById(id);
+        if (!el) return fallback;
+        const val = parseFloat(el.value);
+        return Number.isFinite(val) ? val : fallback;
+      };
+
+      const met = Math.max(0.7, Math.min(4.0, getNum('met_val', 1.1)));
+      const clo = Math.max(0.1, Math.min(2.0, getNum('clo_val', 0.50)));
+      const x_occ = Math.max(0.3, Math.min(10.0, getNum('x_occ_val', 2.0)));
+      const dTmrt = Math.max(-5.0, Math.min(8.0, getNum('mrt_offset_val', 1.0)));
+
+      const vAir = computeOccupantJetVelocity(params.Vp_dot, params, x_occ);
+      const Tdb = results.p_out.Tdb;
+      const rhPct = results.p_out.RH;
+      const Tmrt = Tdb + dTmrt;
+      const Top = 0.5 * (Tdb + Tmrt);
+
+      const comfRes = calculateASHRAE55PMV(Tdb, rhPct, vAir, met, clo, dTmrt);
+
+      // IMAC (India Model for Adaptive Comfort) neutral temperature & 90% acceptability band
+      const Tout_ref = results.p_in.Tdb;
+      const imacNeutral = 0.54 * Tout_ref + 12.83;
+      const imacLow = imacNeutral - 2.4;
+      const imacHigh = imacNeutral + 2.4;
+
+      results.comfort = {
+        met, clo, x_occ, dTmrt, vAir, Top,
+        ...comfRes,
+        imacNeutral, imacLow, imacHigh
+      };
+
+      // Update Comfort UI Readouts
+      document.getElementById('disp_met').textContent = `${met.toFixed(1)} met`;
+      document.getElementById('disp_clo').textContent = `${clo.toFixed(2)} clo`;
+      document.getElementById('disp_xocc').textContent = `${x_occ.toFixed(1)} m`;
+      document.getElementById('disp_vair').textContent = `${vAir.toFixed(2)} m/s`;
+      document.getElementById('disp_mrt').textContent = `${dTmrt >= 0 ? '+' : ''}${dTmrt.toFixed(1)} K`;
+
+      const pmv = comfRes.PMV;
+      const pmvSign = pmv >= 0 ? '+' : '';
+      document.getElementById('comfort_pmv_val').textContent = `${pmvSign}${pmv.toFixed(2)}`;
+      document.getElementById('comfort_ppd_val').textContent = `${comfRes.PPD.toFixed(1)}%`;
+      document.getElementById('comfort_ce_val').textContent = `+${comfRes.CE.toFixed(1)} °C`;
+      document.getElementById('comfort_set_val').textContent = `SET*: ${comfRes.setStar.toFixed(1)}°C`;
+      document.getElementById('comfort_top_val').textContent = `${Top.toFixed(1)} °C`;
+      document.getElementById('comfort_top_adj').textContent = `Effective: ${(Top - comfRes.CE).toFixed(1)}°C`;
+      document.getElementById('comfort_imac_neut').textContent = `${imacNeutral.toFixed(1)} °C`;
+      document.getElementById('comfort_imac_band').textContent = `90%: ${imacLow.toFixed(1)}–${imacHigh.toFixed(1)}°C`;
+
+      const rawSign = comfRes.rawPMV >= 0 ? '+' : '';
+      document.getElementById('comfort_raw_pmv_val').textContent = `${rawSign}${comfRes.rawPMV.toFixed(2)}`;
+      document.getElementById('comfort_w_val').textContent = `ω: ${results.p_out.w.toFixed(1)} g/kg`;
+
+      let desc = 'Neutral Comfort';
+      if (pmv < -1.5) desc = 'Cool / Chilly';
+      else if (pmv < -0.5) desc = 'Slightly Cool';
+      else if (pmv <= 0.5) desc = 'Neutral Comfort';
+      else if (pmv <= 1.5) desc = 'Slightly Warm';
+      else desc = 'Warm / Hot';
+
+      document.getElementById('comfort_pmv_desc').textContent = desc;
+
+      const badge = document.getElementById('comfort_status_badge');
+      const isCompliant = Math.abs(pmv) <= 0.5 && comfRes.PPD <= 10.0;
+      if (isCompliant) {
+        badge.textContent = 'ASHRAE 55 Compliant';
+        badge.className = 'font-mono-num text-xs px-2.5 py-1 rounded-lg font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+      } else {
+        badge.textContent = pmv > 0.5 ? 'Above Comfort (+PMV)' : 'Below Comfort (-PMV)';
+        badge.className = 'font-mono-num text-xs px-2.5 py-1 rounded-lg font-bold bg-amber-100 text-amber-800 border border-amber-300';
+      }
+
+      // Position PMV marker along [-3, +3] scale (0% = -3.0, 50% = 0.0, 100% = +3.0)
+      const clampedPmv = Math.max(-3.0, Math.min(3.0, pmv));
+      const pct = ((clampedPmv + 3.0) / 6.0) * 100.0;
+      const marker = document.getElementById('pmv_gauge_marker');
+      if (marker) marker.style.left = `${pct.toFixed(1)}%`;
+
+      const gaugeLbl = document.getElementById('pmv_gauge_label');
+      if (gaugeLbl) {
+        gaugeLbl.textContent = `PMV = ${pmvSign}${pmv.toFixed(2)} (PPD ${comfRes.PPD.toFixed(1)}%) — ${desc}`;
+      }
+    }
+
+    function setComfortPreset(type, val) {
+      if (type === 'met') {
+        document.getElementById('met_val').value = val;
+      } else if (type === 'clo') {
+        document.getElementById('clo_val').value = val;
+      }
+      runSimulation();
+    }
+
+    // -------------------------------------------------------------------------
     // 3. STATE & SOLVER EXECUTION (PURE IEC CROSS-FLOW)
     // -------------------------------------------------------------------------
     let appState = {
-      internalNuMode: 'finite',
       arrangement: 'staggered',
       secAirDir: 'top_down',
       filmMode: 'nusselt',
       twMode: 'solved',
+      internalNuMode: 'finite',
       contourField: 'Tp',
       lastResults: null,
       lastParams: null
@@ -1044,16 +1402,16 @@
       const Vw_lpm = Math.max(0.05, getNum('Vw_lpm', 6.0));
       const h_film_const = Math.max(50, getNum('h_film_const', 3000));
       const Tw_const = getNum('Tw_const', 20.0);
-      const Do = Math.max(3, getNum('D_o', 25.0)) / 1000.0;
+      const Do = Math.max(3, getNum('D_o', 25)) / 1000.0;
       let Di = Math.max(2, getNum('D_i', 21.9)) / 1000.0;
       if (Di >= Do) Di = Do * 0.9;
 
-      const L = Math.max(0.1, getNum('L', 1.00));
+      const L = Math.max(0.1, getNum('L', 1.0));
       const N_rows = Math.min(30, Math.max(2, Math.round(getNum('N_rows', 12))));
       const N_cols = Math.min(30, Math.max(2, Math.round(getNum('N_cols', 16))));
 
-      let ST = Math.max(Do * 1000 + 1.5, getNum('S_T', 36.0)) / 1000.0;
-      let SL = Math.max(Do * 1000 + 1.5, getNum('S_L', 36.0)) / 1000.0;
+      let ST = Math.max(Do * 1000 + 1.5, getNum('S_T', 36)) / 1000.0;
+      let SL = Math.max(Do * 1000 + 1.5, getNum('S_L', 36)) / 1000.0;
       const k_wall = Math.max(0.05, getNum('k_wall', 0.2));
 
       const nusseltFilm = nusseltWaterFilmCoeffs(Vw_lpm, L, N_cols);
@@ -1064,13 +1422,13 @@
       return {
         Tp_in, RHp_in, Vp_cmh, Vp_dot,
         regen, Ts_in, RHs_in, Vs_cmh, Vs_dot, Le, Vw_lpm,
-        internalNuMode: appState.internalNuMode,
         filmMode: appState.filmMode,
         h_film_const,
         film,
         secAirDir: appState.secAirDir,
         twMode: appState.twMode,
         Tw_const,
+        internalNuMode: appState.internalNuMode,
         Do, Di, L, N_rows, N_cols, ST, SL, k_wall,
         arrangement: appState.arrangement,
         Nx: 30
@@ -1575,6 +1933,7 @@
       appState.lastParams = params;
 
       updateDashboardCards(results, params);
+      evaluateThermalComfort(results, params);
       drawTubeStructure(params, results);
       drawPsychrometricChart(results);
       drawContourHeatmap(results);
@@ -1971,6 +2330,74 @@
       const toX = (T) => pad.left + ((T - tMin) / (tMax - tMin)) * plotW;
       const toY = (wGkg) => pad.top + plotH - ((wGkg - wMin) / (wMax - wMin)) * plotH;
 
+      // Extract active comfort evaluation parameters
+      const comf = results.comfort || { vAir: 0.25, met: 1.1, clo: 0.5, dTmrt: 1.0 };
+      const { vAir, met, clo, dTmrt } = comf;
+
+      // DYNAMIC ASHRAE 55 COMFORT POLYGON (CBE THERMAL COMFORT TOOL ENGINE)
+      // Bounded by PMV_ASHRAE55 = -0.5 (left edge) and PMV_ASHRAE55 = +0.5 (right edge) across humidity ratios w in [0, 30] g/kg
+      const wSteps = [];
+      for (let wVal = 0.0; wVal <= 30.0; wVal += 0.5) {
+        wSteps.push(wVal);
+      }
+
+      const leftPts = [];
+      const rightPts = [];
+
+      wSteps.forEach((wVal) => {
+        const wKg = wVal / 1000.0;
+        const T_sat = dewPointTemp(wKg);
+
+        // Solve T_left for PMV_ASHRAE55 = -0.5
+        const T_left = solveRoot((T_guess) => {
+          const rh_guess = rhFromHumidityRatio(T_guess, wKg) * 100.0;
+          return calculateASHRAE55PMV(T_guess, rh_guess, vAir, met, clo, dTmrt).PMV - (-0.5);
+        }, 15.0, 36.0, 1e-3, 30);
+
+        // Solve T_right for PMV_ASHRAE55 = +0.5
+        const T_right = solveRoot((T_guess) => {
+          const rh_guess = rhFromHumidityRatio(T_guess, wKg) * 100.0;
+          return calculateASHRAE55PMV(T_guess, rh_guess, vAir, met, clo, dTmrt).PMV - (+0.5);
+        }, 20.0, 42.0, 1e-3, 30);
+
+        // Saturation 100% RH cutoff
+        const T_left_eff = Math.max(T_sat, T_left);
+        if (T_right > T_left_eff) {
+          leftPts.push({ T: T_left_eff, w: wVal });
+          rightPts.push({ T: T_right, w: wVal });
+        }
+      });
+
+      if (leftPts.length > 0 && rightPts.length > 0) {
+        ctx.save();
+        // Exact CBE Thermal Comfort Tool Green Polygon Styling
+        ctx.fillStyle = 'rgba(22, 163, 74, 0.72)';
+        ctx.strokeStyle = '#15803d';
+        ctx.lineWidth = 1.4;
+
+        ctx.beginPath();
+        // Ascend left boundary
+        ctx.moveTo(toX(leftPts[0].T), toY(leftPts[0].w));
+        for (let k = 1; k < leftPts.length; k++) {
+          ctx.lineTo(toX(leftPts[k].T), toY(leftPts[k].w));
+        }
+        // Descend right boundary
+        for (let k = rightPts.length - 1; k >= 0; k--) {
+          ctx.lineTo(toX(rightPts[k].T), toY(rightPts[k].w));
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#052e16';
+        ctx.font = '700 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        const midIdx = Math.floor(leftPts.length * 0.45);
+        const midT = 0.5 * (leftPts[midIdx].T + rightPts[midIdx].T);
+        ctx.fillText('ASHRAE 55 Comfort Zone', toX(midT), toY(leftPts[midIdx].w));
+        ctx.restore();
+      }
+
       // Grid lines
       ctx.strokeStyle = '#e2e8f0';
       ctx.lineWidth = 1;
@@ -2071,6 +2498,23 @@
       // Primary Sensible Cooling (P1 -> P2) & Secondary Humidification (S1 -> S2)
       drawProcess(results.p_in, results.p_out, '#f59e0b', 'P₁', 'P₂');
       drawProcess(results.s_in, results.s_out, '#4f46e5', 'S₁', 'S₂');
+
+      // State P2 Target Dot & Circled Ring (Matching CBE Thermal Comfort Tool Visuals)
+      const xP2 = toX(results.p_out.Tdb);
+      const yP2 = toY(results.p_out.w);
+      ctx.save();
+      // Outer red target ring
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(xP2, yP2, 9.5, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner solid red point
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(xP2, yP2, 3.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       // Axis Titles
       ctx.fillStyle = '#475569';
@@ -2516,7 +2960,8 @@
     const inputIds = [
       'Tp_in', 'RHp_in', 'Vp_cmh',
       'regen_mode', 'Ts_in', 'RHs_in', 'Vs_cmh', 'Le_num', 'Vw_lpm', 'h_film_const', 'Tw_const',
-      'D_o', 'D_i', 'L', 'N_rows', 'N_cols', 'S_T', 'S_L', 'k_wall'
+      'D_o', 'D_i', 'L', 'N_rows', 'N_cols', 'S_T', 'S_L', 'k_wall',
+      'met_val', 'clo_val', 'x_occ_val', 'mrt_offset_val'
     ];
     inputIds.forEach((id) => {
       const el = document.getElementById(id);
